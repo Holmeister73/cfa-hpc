@@ -1,4 +1,4 @@
 torch>=1.13.1
 datasets>=2.14.3
 numpy
-huggingface_hub
+pandas
