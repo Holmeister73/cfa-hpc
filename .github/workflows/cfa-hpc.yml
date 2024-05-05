@@ -1,14 +1,14 @@
-name: Build TurkishLMTuner-HPC image
+name: Build CFA-HPC image
 on:
   workflow_dispatch:
   push:
     paths:
-      - containers/turkish-lmtuner-hpc/Dockerfile
-      - .github/workflows/turkishlmtuner-hpc.yml # Self-trigger
+      - containers/cfa-hpc/Dockerfile
+      - .github/workflows/cfa-hpc.yml # Self-trigger
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: holmeister73/turkish-lmtuner-hpc
+  IMAGE_NAME: holmeister73/cfa-hpc
   VERSION: latest
 
 jobs:
@@ -36,7 +36,7 @@ jobs:
       - name: Build and push image
         uses: docker/build-push-action@v4
         with:
-          context: containers/turkish-lmtuner-hpc
+          context: containers/cfa-hpc
           build-args: |
             VERSION=${{ env.VERSION }}
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}
