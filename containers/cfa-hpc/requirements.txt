@@ -2,4 +2,4 @@ torch>=1.13.1
 datasets>=2.14.3
 numpy
 pandas
-git+https://github.com/fra31/auto-attack
+torchattacks
