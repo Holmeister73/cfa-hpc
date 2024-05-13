@@ -17,7 +17,6 @@ import torchattacks
 import pandas as pd
 import datasets
 
-print(torch.utils.collect_env)
 parser=argparse.ArgumentParser()
 
 parser.add_argument("--dataset_name", help = """Name of the dataset, it can either be cifar10 or tiny_imagenet""", type = str, default = "cifar10")
