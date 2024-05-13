@@ -13,7 +13,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-    
+torch.backends.cudnn.enabled = False
+
 class BasicBlock(nn.Module):
     expansion = 1
 
