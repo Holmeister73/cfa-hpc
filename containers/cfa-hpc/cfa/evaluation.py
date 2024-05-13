@@ -10,7 +10,6 @@ import torchvision.transforms as transforms
 import numpy as np
 import torchattacks
 
-torch.backends.cudnn.enabled = False
 device= torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def final_evaluation(model, test_loader, mean, std, normalize, num_classes = 10):
