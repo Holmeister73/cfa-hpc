@@ -46,13 +46,13 @@ parser.add_argument("--epsilon", help="""Attack strength for pgd""", type = floa
 
 parser.add_argument("--step_size", help="""Step size for pgd attack""", type = int, default = 2/255)
 
-parser.add_argument("--attack_steps", help = "Amount of steps for pgd attack and TRADES loss", default = 10)
+parser.add_argument("--attack_steps", help = "Amount of steps for pgd attack and TRADES loss", type = int, default = 10)
 
-parser.add_argument("--beta", help = "Beta hyperparameter for TRADES", default = 6)
+parser.add_argument("--beta", help = "Beta hyperparameter for TRADES", type = float, default = 6)
 
-parser.add_argument("--ccm", help="""Whether to use ccm, default is false""",  default = "False")
+parser.add_argument("--ccm", help="""Whether to use ccm, default is false""", type = str,  default = "False")
 
-parser.add_argument("--ccr", help="""Whether to use ccr, default is false""",  default = "False")
+parser.add_argument("--ccr", help="""Whether to use ccr, default is false""", type = str,  default = "False")
 
 parser.add_argument("--weight_average_type", help="""What type of weight averaging to use, options are ema, fawa, none""", type = str,  default = "none")
 
