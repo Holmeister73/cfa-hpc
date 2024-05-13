@@ -11,7 +11,6 @@ from extra_datasets import TinyImageNet
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.utils.data import Dataset, DataLoader
 
-torch.backends.cudnn.enabled = False
 device= torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
