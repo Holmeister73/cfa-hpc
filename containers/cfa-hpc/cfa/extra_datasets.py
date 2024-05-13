@@ -9,7 +9,6 @@ from datasets import load_dataset, Dataset
 from torch.utils.data import Dataset, DataLoader
 from PIL import Image
 
-torch.backends.cudnn.enabled = False
 class TinyImageNet(Dataset):
     def __init__(self, train = True, transform=None):
         super(Dataset, self).__init__()
