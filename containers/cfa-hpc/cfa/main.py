@@ -96,7 +96,6 @@ threshold = args.threshold
 hf_token = args.hf_token_hub
 detailed_statistics = args.detailed_statistics
 
-torch.backends.cudnn.enabled = False
 device= torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
