@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Jan 11 21:39:22 2024
-
-@author: USER
-"""
-
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from sklearn.decomposition import PCA
+from torch.autograd import Variable
+import torchvision.transforms as transforms
+from torchvision import datasets
+from extra_datasets import TinyImageNet
+from torch.utils.data.sampler import SubsetRandomSampler
+from torch.utils.data import Dataset, DataLoader
 
 device= torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -22,94 +21,232 @@ def one_hot_encode(label_list, num_classes):
 
     return encoded
 
-def pgd_attack(original_img, label, model, loss_func, normalize, denormalize, epsilon = 8/255, num_steps = 10, step_size = 2/255):
-    original_img = denormalize(original_img)
-    x = original_img + 2*epsilon*torch.rand(original_img.shape).to(device) - epsilon*torch.ones_like(original_img).to(device)
-    x = torch.clamp(x, 0, 1)
-    x.requires_grad = True
+
+def get_average_of_min_20_percent(x):   # x will be a list
+    x.sort()
+    cutoff = int(len(x)*0.2)
+    x_min_20 = x[:cutoff]
+    
+    return sum(x_min_20)/len(x_min_20)
+def TRADES_loss(model, original_imgs, labels, normalize, epsilon = 8/255, beta = 6, step_size=0.003, num_steps=10, 
+               ccr = False, ccm= False, eps_by_class = None, beta_by_class = None):  
+    
+    ### This function is mostly taken from https://github.com/PKU-ML/CFA/blob/main/attack.py
+    # define KL-loss
+    criterion_kl = nn.KLDivLoss(size_average=False)
+    model.eval()
+    batch_size = len(original_imgs)
+    # generate adversarial example
+    
+    
+    adv_imgs = original_imgs.detach() + 0.001 * torch.randn(original_imgs.shape).to(original_imgs.device).detach()
+    
     for i in range(num_steps):
-        pred = model(normalize(x))
-        loss = loss_func(pred, label)
-        loss.backward()
-        grad = x.grad.detach()
-        x_data = x + step_size*torch.sign(grad)
-        x_data = torch.clamp(x_data, min = original_img-epsilon, max = original_img + epsilon)
-        x_data = torch.clamp(x_data, 0, 1)
-        x.data = x_data
-        x.grad.zero_()
-        
-    return x.detach()        
+        adv_imgs.requires_grad_()
+        with torch.enable_grad():
+            loss_kl = criterion_kl(F.log_softmax(model(normalize(adv_imgs)), dim=1),
+                                    F.softmax(model(normalize(original_imgs)), dim=1))
+        grad = torch.autograd.grad(loss_kl, [adv_imgs])[0]
+        adv_imgs = adv_imgs.detach() + step_size * torch.sign(grad.detach())
+        if ccm == True:
+            batch_eps = torch.tensor([eps_by_class[int(label)] for label in labels])
+            adv_imgs =  torch.clamp(adv_imgs, min = original_imgs - batch_eps, max = original_imgs + batch_eps)
+        else:
+            adv_imgs =  torch.clamp(adv_imgs, min = original_imgs - epsilon, max = original_imgs + epsilon)
+        adv_imgs = torch.clamp(adv_imgs, min = 0, max = 1)
 
+    model.train()
 
-
-def soft_cross_entropy(output, target, soft_labels):    
+    adv_imgs = Variable(torch.clamp(adv_imgs, min = 0, max= 1), requires_grad=False)
+    # calculate robust loss
+    original_preds = model(normalize(original_imgs))
     
-    target_prob = torch.zeros_like(output)
-    batch = output.shape[0]
-    for k in range(batch):
-            target_prob[k] = soft_labels[int(target[k])]
-            
-    log_like = -torch.nn.functional.log_softmax(output, dim=1)
-    loss = torch.sum(torch.mul(log_like, target_prob)) / batch 
-    return loss
+    loss_natural = F.cross_entropy(original_preds, labels, reduction='none') / batch_size
 
-def cross_entropy_without_softmax(predictions, labels, num_classes):
+    cw_criterion = nn.KLDivLoss(reduction='none')
     
-    batch = predictions.shape[0]
-    log_predictions = -torch.log(predictions)
-    labels = F.one_hot(labels, num_classes).float()
-    loss = torch.sum(torch.mul(log_predictions,labels)) / batch
+    adv_preds = model(normalize(adv_imgs))
+    loss_robust = cw_criterion(F.log_softmax(adv_preds, dim=1), F.softmax(original_preds, dim=1)) / batch_size
     
-    return loss
+    if ccr == True:
+        batch_beta = torch.tensor([beta_by_class[int(label)] for label in labels])
+        assert len(batch_beta) == len(loss_robust)   
+                                        
+    print(batch_beta.shape, loss_natural.shape, loss_robust.shape)
+    
+    if ccr == True:
+        loss = ((1-batch_beta) * loss_natural + batch_beta * loss_robust).sum()
+    else:
+        loss = (loss_natural + beta * loss_robust).sum()
+   
 
-def manual_cross_entropy(predictions, labels):
-    batch = predictions.shape[0]
-    log_softmax_predictions = -torch.nn.functional.log_softmax(predictions, dim=1)
-    loss = torch.sum(torch.mul(log_softmax_predictions,labels)) / batch
+    return loss, adv_preds.clone().detach()
+   
+def weight_average(model, new_model, decay_rate, init=False): 
+    ### This function is taken from https://github.com/PKU-ML/CFA/blob/main/utils.py
     
-    return loss
-
-def entropy(prediction):
-    batch = prediction.shape[0]
-    prediction_log_softmax = -torch.nn.functional.log_softmax(prediction, dim=1)
-    prediction_softmax = torch.nn.functional.softmax(prediction, dim = 1)
-    loss = torch.sum(torch.mul(prediction_log_softmax, prediction_softmax)) / batch
+    model.eval()
+    new_model.eval()
+    state_dict = model.state_dict()
+    new_dict = new_model.state_dict()
     
-    return loss
-
-def kl_loss(predictions, log_labels):
-    batch = predictions.shape[0]
-    predictions_softmax = torch.nn.functional.softmax(predictions, dim = 1)
-    log_softmax_predictions = torch.nn.functional.log_softmax(predictions, dim=1)
-    loss = torch.sum(torch.mul(predictions_softmax,(log_softmax_predictions-log_labels))) / batch
+    if init == True:
+        decay_rate = 0
     
-    return loss
+    for key in state_dict:
+        new_dict[key] = (state_dict[key]*decay_rate + new_dict[key]*(1-decay_rate)).clone().detach()
+    model.load_state_dict(new_dict) 
+    
+    return 
 
-def calculate_valid_acc(network, valid_loader):
+def validation(model, valid_loader, normalize, attack, num_classes = 10):
     
     with torch.no_grad():
         ValidLoss = 0
-        network.eval()
-        samples=0
-        correct=0
-        total = 0
+        model.eval()
+        samples_by_class = [0 for i in range(num_classes)]
+        clean_corrects_by_class = [0 for i in range(num_classes)]
+        adv_corrects_by_class = [0 for i in range(num_classes)]
+        
         loss_func=nn.CrossEntropyLoss()
+        
         for j,(images,labels) in enumerate(valid_loader):
             images=images.to(device)
             labels=labels.to(device)
+            adv_images = attack(images, labels)
             
-            predictions = network(images)
+            clean_predictions = model(normalize(images))
+            _,clean_predicted=torch.max(clean_predictions,1)
             
-            loss=loss_func(predictions,labels)
+            loss=loss_func(clean_predictions,labels)
             
-            _,predicted=torch.max(predictions,1)
-            samples+=labels.size(0)
-            correct+=(predicted==labels).sum().item()
-            ValidLoss+= loss.item()*labels.size(0)
-            total += labels.size(0)
-    
-    acc=correct/samples
-    
-    return acc, ValidLoss/total      
+            adv_predictions = model(normalize(adv_images))
+           
+            _,adv_predicted=torch.max(adv_predictions,1)
+            
+            for prediction, label in zip(list(clean_predicted), list(labels)):
+                if prediction == label: 
+                    clean_corrects_by_class[int(label)] += 1
+                samples_by_class[int(label)] += 1
+            
+            for prediction, label in zip(list(adv_predicted), list(labels)):
+                if prediction == label: 
+                    adv_corrects_by_class[int(label)] += 1
+                
+            ValidLoss += loss.item()*labels.size(0)
+        
+        clean_accuracies_by_class = [correct/total for correct,total in zip(clean_corrects_by_class, samples_by_class)]
+        adv_accuracies_by_class = [correct/total for correct,total in zip(adv_corrects_by_class, samples_by_class)]
+        ValidLoss = ValidLoss/sum(samples_by_class)
+        
+    return clean_accuracies_by_class, adv_accuracies_by_class, ValidLoss    
 
+def calculate_test_accs(model, test_loader, normalize, pgd_attack, fgsm_attack, num_classes = 10):
+    
+    with torch.no_grad():
+        model.eval()
+        samples_by_class = [0 for i in range(num_classes)]
+        clean_corrects_by_class = [0 for i in range(num_classes)]
+        pgd_corrects_by_class = [0 for i in range(num_classes)]
+        fgsm_corrects_by_class = [0 for i in range(num_classes)]
+        
+        for j,(images,labels) in enumerate(test_loader):
+            images=images.to(device)
+            labels=labels.to(device)
+            pgd_adv_images = pgd_attack(images, labels)
+            fgsm_adv_images = fgsm_attack(images, labels)
+            
+            clean_predictions = model(normalize(images))
+            _,clean_predicted=torch.max(clean_predictions,1)
+        
+            pgd_predictions = model(normalize(pgd_adv_images))
+            _,pgd_predicted=torch.max(pgd_predictions,1)
+            
+            fgsm_predictions = model(normalize(fgsm_adv_images))
+            _,fgsm_predicted=torch.max(fgsm_predictions,1)
+            
+            for prediction, label in zip(list(clean_predicted), list(labels)):
+                if prediction == label: 
+                    clean_corrects_by_class[int(label)] += 1
+                samples_by_class[int(label)] += 1
+            
+            for prediction, label in zip(list(pgd_predicted), list(labels)):
+                if prediction == label: 
+                    pgd_corrects_by_class[int(label)] += 1
+
+            for prediction, label in zip(list(fgsm_predicted), list(labels)):
+                if prediction == label: 
+                    fgsm_corrects_by_class[int(label)] += 1
+                
+                
+        
+        clean_accuracies_by_class = [correct/total for correct,total in zip(clean_corrects_by_class, samples_by_class)]
+        pgd_accuracies_by_class = [correct/total for correct,total in zip(pgd_corrects_by_class, samples_by_class)]
+        fgsm_accuracies_by_class = [correct/total for correct,total in zip(fgsm_corrects_by_class, samples_by_class)]
+        
+    return clean_accuracies_by_class, pgd_accuracies_by_class, fgsm_accuracies_by_class    
+
+
+def get_loaders(dataset_name = "cifar10", valid_size = 0.02):
+    cifar10_transform_train = transforms.Compose([transforms.RandomCrop(32, padding=4), transforms.RandomHorizontalFlip(),
+                                                  transforms.ToTensor()])
+
+    cifar10_transform_valid = transforms.Compose([transforms.ToTensor()])
+
+    tiny_imagenet_transform_train = transforms.Compose([transforms.RandomCrop(56), transforms.RandomHorizontalFlip(),
+                                                        transforms.ToTensor()])
+
+    tiny_imagenet_transform_valid = transforms.Compose([transforms.CenterCrop(56), transforms.ToTensor()])
+
+
+    cifar10_train = datasets.CIFAR10(root="./data", train = True, download = True, transform=cifar10_transform_train)
+    cifar10_valid = datasets.CIFAR10(root="./data", train = True, download = True, transform=cifar10_transform_valid)
+    cifar10_test = datasets.CIFAR10(root="./data", train = False, download = True, transform=cifar10_transform_valid)
+    tiny_imagenet_train = TinyImageNet(train = True, transform = tiny_imagenet_transform_train)
+    tiny_imagenet_valid = TinyImageNet(train = True, transform = tiny_imagenet_transform_valid)
+    tiny_imagenet_test = TinyImageNet(train = False, transform = tiny_imagenet_transform_valid)
+    
+    
+    rng = np.random.default_rng(42)
+    train_indices = []
+    valid_indices = []
+    
+    if dataset_name == "cifar10":
+        num_train = len(cifar10_train)
+        indices = list(rng.permutation(num_train))
+        num_classes = 10
+        valid_amount = int(np.floor(valid_size * num_train)/num_classes)
+        class_indices = [[] for i in range(num_classes)]
+        labels = cifar10_train.targets
+        for index in indices:
+            class_indices[labels[index]].append(index)
+            
+        for i in range(num_classes):
+            valid_indices += class_indices[i][:valid_amount]
+            train_indices += class_indices[i][valid_amount:]
+       
+        train_sampler = SubsetRandomSampler(train_indices)
+        valid_sampler = SubsetRandomSampler(valid_indices)
+        train_loader = DataLoader(cifar10_train, batch_size = 128, sampler = train_sampler)
+        valid_loader = DataLoader(cifar10_valid, batch_size = 128, sampler = valid_sampler)
+        test_loader = DataLoader(cifar10_test, batch_size = 128, shuffle = False)
+    elif dataset_name == "tiny_imagenet":
+        num_train = len(tiny_imagenet_train)
+        indices = list(rng.permutation(num_train))
+        num_classes = 200
+        valid_amount = int(np.floor(valid_size * num_train)/num_classes)
+        class_indices = [[] for i in range(num_classes)]
+        labels = cifar10_train.targets
+        for index in indices:
+            class_indices[labels[index]].append(index)
+            
+        for i in range(num_classes):
+            valid_indices += class_indices[i][:valid_amount]
+            train_indices += class_indices[i][valid_amount:]
+       
+        train_loader = DataLoader(tiny_imagenet_train, batch_size = 128, sampler = train_sampler)
+        valid_loader = DataLoader(tiny_imagenet_valid, batch_size = 128, shuffle = valid_sampler)
+        test_loader = DataLoader(tiny_imagenet_test, batch_size = 128, shuffle = False)
+    
+    return train_loader, valid_loader, test_loader
 

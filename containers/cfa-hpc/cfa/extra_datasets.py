@@ -1,10 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Jan 11 21:40:48 2024
-
-@author: USER
-"""
-
 
 
 import torch
@@ -25,14 +19,21 @@ class TinyImageNet(Dataset):
             dataset = load_dataset('Maysee/tiny-imagenet', split='train')
         else:
             dataset = load_dataset('Maysee/tiny-imagenet', split='valid')
-        self.data = dataset.with_format("torch")
+            
+        self.targets = list(dataset["label"])
+        #self.data = dataset.with_format("torch")
+        self.data = dataset
         
     def __getitem__(self, index):
         
         img = self.data[index]["image"]
-        label = self.data[index]["label"]
+        
+        label = self.targets[index]
         if self.transform is not None:
             img = self.transform(img)
+            
+        if img.shape[0] == 1:
+            img = img.repeat(3,1,1)
         return img, label
 
     def __len__(self):
