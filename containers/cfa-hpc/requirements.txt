@@ -1,7 +1,7 @@
 torch>=1.13.1
 datasets>=2.14.3
-numpy
-pandas
+pandas>=1.2.4
+numpy>=1.19.4
 torchattacks
 torchvision
 scipy>=0.14.0
