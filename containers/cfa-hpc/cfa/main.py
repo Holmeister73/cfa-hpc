@@ -72,7 +72,6 @@ args=parser.parse_args()
 
 dataset_name = args.dataset_name
 model_name = args.model_name
-at_type = args.at_type
 lr = args.initial_lr
 epoch_number = args.num_epochs
 batch_size = args.batch_size
