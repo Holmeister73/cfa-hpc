@@ -103,88 +103,86 @@ def weight_average(model, new_model, decay_rate, init=False):
 
 def validation(model, valid_loader, normalize, attack, num_classes = 10):
     
-    with torch.no_grad():
-        ValidLoss = 0
-        model.eval()
-        samples_by_class = [0 for i in range(num_classes)]
-        clean_corrects_by_class = [0 for i in range(num_classes)]
-        adv_corrects_by_class = [0 for i in range(num_classes)]
+    model.eval()
+    ValidLoss = 0
+    samples_by_class = [0 for i in range(num_classes)]
+    clean_corrects_by_class = [0 for i in range(num_classes)]
+    adv_corrects_by_class = [0 for i in range(num_classes)]
+    
+    loss_func=nn.CrossEntropyLoss()
+    
+    for j,(images,labels) in enumerate(valid_loader):
+        images=images.to(device)
+        labels=labels.to(device)
+        adv_images = attack(images, labels)
+        clean_predictions = model(normalize(images))
+        _,clean_predicted=torch.max(clean_predictions,1)
         
-        loss_func=nn.CrossEntropyLoss()
+        loss=loss_func(clean_predictions,labels)
         
-        for j,(images,labels) in enumerate(valid_loader):
-            images=images.to(device)
-            labels=labels.to(device)
-            adv_images = attack(images, labels)
-            
-            clean_predictions = model(normalize(images))
-            _,clean_predicted=torch.max(clean_predictions,1)
-            
-            loss=loss_func(clean_predictions,labels)
-            
-            adv_predictions = model(normalize(adv_images))
-           
-            _,adv_predicted=torch.max(adv_predictions,1)
-            
-            for prediction, label in zip(list(clean_predicted), list(labels)):
-                if prediction == label: 
-                    clean_corrects_by_class[int(label)] += 1
-                samples_by_class[int(label)] += 1
-            
-            for prediction, label in zip(list(adv_predicted), list(labels)):
-                if prediction == label: 
-                    adv_corrects_by_class[int(label)] += 1
-                
-            ValidLoss += loss.item()*labels.size(0)
+        adv_predictions = model(normalize(adv_images))
+       
+        _,adv_predicted=torch.max(adv_predictions,1)
         
-        clean_accuracies_by_class = [correct/total for correct,total in zip(clean_corrects_by_class, samples_by_class)]
-        adv_accuracies_by_class = [correct/total for correct,total in zip(adv_corrects_by_class, samples_by_class)]
-        ValidLoss = ValidLoss/sum(samples_by_class)
+        for prediction, label in zip(list(clean_predicted), list(labels)):
+            if prediction == label: 
+                clean_corrects_by_class[int(label)] += 1
+            samples_by_class[int(label)] += 1
+        
+        for prediction, label in zip(list(adv_predicted), list(labels)):
+            if prediction == label: 
+                adv_corrects_by_class[int(label)] += 1
+            
+        ValidLoss += loss.item()*labels.size(0)
+    
+    clean_accuracies_by_class = [correct/total for correct,total in zip(clean_corrects_by_class, samples_by_class)]
+    adv_accuracies_by_class = [correct/total for correct,total in zip(adv_corrects_by_class, samples_by_class)]
+    ValidLoss = ValidLoss/sum(samples_by_class)
         
     return clean_accuracies_by_class, adv_accuracies_by_class, ValidLoss    
 
 def calculate_test_accs(model, test_loader, normalize, pgd_attack, fgsm_attack, num_classes = 10):
     
-    with torch.no_grad():
-        model.eval()
-        samples_by_class = [0 for i in range(num_classes)]
-        clean_corrects_by_class = [0 for i in range(num_classes)]
-        pgd_corrects_by_class = [0 for i in range(num_classes)]
-        fgsm_corrects_by_class = [0 for i in range(num_classes)]
+    
+    model.eval()
+    samples_by_class = [0 for i in range(num_classes)]
+    clean_corrects_by_class = [0 for i in range(num_classes)]
+    pgd_corrects_by_class = [0 for i in range(num_classes)]
+    fgsm_corrects_by_class = [0 for i in range(num_classes)]
+    
+    for j,(images,labels) in enumerate(test_loader):
+        images=images.to(device)
+        labels=labels.to(device)
+        pgd_adv_images = pgd_attack(images, labels)
+        fgsm_adv_images = fgsm_attack(images, labels)
         
-        for j,(images,labels) in enumerate(test_loader):
-            images=images.to(device)
-            labels=labels.to(device)
-            pgd_adv_images = pgd_attack(images, labels)
-            fgsm_adv_images = fgsm_attack(images, labels)
-            
-            clean_predictions = model(normalize(images))
-            _,clean_predicted=torch.max(clean_predictions,1)
+        clean_predictions = model(normalize(images))
+        _,clean_predicted=torch.max(clean_predictions,1)
+    
+        pgd_predictions = model(normalize(pgd_adv_images))
+        _,pgd_predicted=torch.max(pgd_predictions,1)
         
-            pgd_predictions = model(normalize(pgd_adv_images))
-            _,pgd_predicted=torch.max(pgd_predictions,1)
-            
-            fgsm_predictions = model(normalize(fgsm_adv_images))
-            _,fgsm_predicted=torch.max(fgsm_predictions,1)
-            
-            for prediction, label in zip(list(clean_predicted), list(labels)):
-                if prediction == label: 
-                    clean_corrects_by_class[int(label)] += 1
-                samples_by_class[int(label)] += 1
-            
-            for prediction, label in zip(list(pgd_predicted), list(labels)):
-                if prediction == label: 
-                    pgd_corrects_by_class[int(label)] += 1
+        fgsm_predictions = model(normalize(fgsm_adv_images))
+        _,fgsm_predicted=torch.max(fgsm_predictions,1)
+        
+        for prediction, label in zip(list(clean_predicted), list(labels)):
+            if prediction == label: 
+                clean_corrects_by_class[int(label)] += 1
+            samples_by_class[int(label)] += 1
+        
+        for prediction, label in zip(list(pgd_predicted), list(labels)):
+            if prediction == label: 
+                pgd_corrects_by_class[int(label)] += 1
 
-            for prediction, label in zip(list(fgsm_predicted), list(labels)):
-                if prediction == label: 
-                    fgsm_corrects_by_class[int(label)] += 1
-                
-                
-        
-        clean_accuracies_by_class = [correct/total for correct,total in zip(clean_corrects_by_class, samples_by_class)]
-        pgd_accuracies_by_class = [correct/total for correct,total in zip(pgd_corrects_by_class, samples_by_class)]
-        fgsm_accuracies_by_class = [correct/total for correct,total in zip(fgsm_corrects_by_class, samples_by_class)]
+        for prediction, label in zip(list(fgsm_predicted), list(labels)):
+            if prediction == label: 
+                fgsm_corrects_by_class[int(label)] += 1
+            
+            
+    
+    clean_accuracies_by_class = [correct/total for correct,total in zip(clean_corrects_by_class, samples_by_class)]
+    pgd_accuracies_by_class = [correct/total for correct,total in zip(pgd_corrects_by_class, samples_by_class)]
+    fgsm_accuracies_by_class = [correct/total for correct,total in zip(fgsm_corrects_by_class, samples_by_class)]
         
     return clean_accuracies_by_class, pgd_accuracies_by_class, fgsm_accuracies_by_class    
 
