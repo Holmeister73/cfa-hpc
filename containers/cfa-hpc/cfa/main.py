@@ -17,6 +17,7 @@ import torchattacks
 import pandas as pd
 import datasets
 
+
 parser=argparse.ArgumentParser()
 
 parser.add_argument("--dataset_name", help = """Name of the dataset, it can either be cifar10 or tiny_imagenet""", type = str, default = "cifar10")
@@ -95,7 +96,9 @@ threshold = args.threshold
 hf_token = args.hf_token_hub
 detailed_statistics = args.detailed_statistics
 
+torch.backends.cudnn.enabled = False
 device= torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 cifar10_normalize = transforms.Normalize(mean=[0.4914, 0.4822, 0.4465],
                                          std=[0.2470, 0.2435, 0.2616])
