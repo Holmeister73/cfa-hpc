@@ -4,3 +4,4 @@ numpy
 pandas
 torchattacks
 torchvision
+scipy>=0.14.0
