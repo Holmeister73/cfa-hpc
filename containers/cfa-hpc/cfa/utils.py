@@ -102,7 +102,7 @@ def weight_average(model, new_model, decay_rate, init=False):
     return 
 
 def validation(model, valid_loader, normalize, attack, num_classes = 10):
-    
+
     model.eval()
     ValidLoss = 0
     samples_by_class = [0 for i in range(num_classes)]
