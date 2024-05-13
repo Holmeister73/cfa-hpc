@@ -28,8 +28,9 @@ def get_average_of_min_20_percent(x):   # x will be a list
     x_min_20 = x[:cutoff]
     
     return sum(x_min_20)/len(x_min_20)
+
 def TRADES_loss(model, original_imgs, labels, normalize, epsilon = 8/255, beta = 6, step_size=0.003, num_steps=10, 
-               ccr = False, ccm= False, eps_by_class = None, beta_by_class = None):  
+               ccr = "False", ccm= "False", eps_by_class = None, beta_by_class = None):  
     
     ### This function is mostly taken from https://github.com/PKU-ML/CFA/blob/main/attack.py
     # define KL-loss
@@ -48,7 +49,7 @@ def TRADES_loss(model, original_imgs, labels, normalize, epsilon = 8/255, beta =
                                     F.softmax(model(normalize(original_imgs)), dim=1))
         grad = torch.autograd.grad(loss_kl, [adv_imgs])[0]
         adv_imgs = adv_imgs.detach() + step_size * torch.sign(grad.detach())
-        if ccm == True:
+        if ccm == "True":
             batch_eps = torch.tensor([eps_by_class[int(label)] for label in labels])
             adv_imgs =  torch.clamp(adv_imgs, min = original_imgs - batch_eps, max = original_imgs + batch_eps)
         else:
@@ -68,13 +69,13 @@ def TRADES_loss(model, original_imgs, labels, normalize, epsilon = 8/255, beta =
     adv_preds = model(normalize(adv_imgs))
     loss_robust = cw_criterion(F.log_softmax(adv_preds, dim=1), F.softmax(original_preds, dim=1)) / batch_size
     
-    if ccr == True:
+    if ccr == "True":
         batch_beta = torch.tensor([beta_by_class[int(label)] for label in labels])
         assert len(batch_beta) == len(loss_robust)   
                                         
     print(batch_beta.shape, loss_natural.shape, loss_robust.shape)
     
-    if ccr == True:
+    if ccr == "True":
         loss = ((1-batch_beta) * loss_natural + batch_beta * loss_robust).sum()
     else:
         loss = (loss_natural + beta * loss_robust).sum()

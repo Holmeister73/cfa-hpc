@@ -48,11 +48,11 @@ parser.add_argument("--step_size", help="""Step size for pgd attack""", type = i
 
 parser.add_argument("--attack_steps", help = "Amount of steps for pgd attack and TRADES loss", default = 10)
 
-parser.add_argument("--beta", help = "Beta hyperparameter for TRADES", default = 8)
+parser.add_argument("--beta", help = "Beta hyperparameter for TRADES", default = 6)
 
-parser.add_argument("--ccm", help="""Whether to use ccm, default is false""",  default = False)
+parser.add_argument("--ccm", help="""Whether to use ccm, default is false""",  default = "False")
 
-parser.add_argument("--ccr", help="""Whether to use ccr, default is false""",  default = False)
+parser.add_argument("--ccr", help="""Whether to use ccr, default is false""",  default = "False")
 
 parser.add_argument("--weight_average_type", help="""What type of weight averaging to use, options are ema, fawa, none""", type = str,  default = "none")
 
@@ -179,7 +179,7 @@ for epoch in range(epoch_number):
         
         if training_type == "vanilla":
             if attack_type == "pgd":
-                if ccm == True:
+                if ccm == "True":
                     pgd_attack = torchattacks.PGD(model, eps = batch_eps, alpha = step_size, steps = num_steps)
                 else:
                     pgd_attack = torchattacks.PGD(model, eps = epsilon, alpha = step_size, steps = num_steps)
@@ -187,7 +187,7 @@ for epoch in range(epoch_number):
                 pgd_attack.set_normalization_used(mean = mean , std = std)
                 adv_images = pgd_attack(images, labels)
             elif attack_type == "fgsm":
-                if ccm == True:
+                if ccm == "True":
                     fgsm_attack = torchattacks.FGSM(model, eps = batch_eps)
                 else:
                     fgsm_attack = torchattacks.FGSM(model, eps = epsilon)
@@ -241,10 +241,10 @@ for epoch in range(epoch_number):
     
     train_robust_accuracies_by_class = [correct/sample for correct, sample in zip(train_robust_corrects_by_class, samples_by_class)]
     
-    if ccm == True and epoch >= 9:
+    if ccm == "True" and epoch >= 9:
         eps_by_class = [eps*(lambda_1 + train_robust_acc) for eps, train_robust_acc in zip(eps_by_class, train_robust_accuracies_by_class)]    
     
-    if ccr == True and epoch >= 9:
+    if ccr == "True" and epoch >= 9:
         beta_by_class = [((beta/(1-beta))*(lambda_2 + train_robust_acc))/(1+((beta/(1-beta))*(lambda_2 + train_robust_acc))) 
                          for beta, train_robust_acc in zip(beta_by_class, train_robust_accuracies_by_class)]
     
