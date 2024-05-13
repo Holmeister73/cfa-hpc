@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
+import torchvision.transforms as transforms
 import numpy as np
 from model import ResNet18, PreActResNet18
 from utils import validation, calculate_test_accs, get_loaders, TRADES_loss, weight_average, get_average_of_min_20_percent
