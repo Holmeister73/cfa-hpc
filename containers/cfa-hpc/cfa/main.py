@@ -132,7 +132,6 @@ eval_fgsm_attack = torchattacks.FGSM(model, eps = epsilon)
 
 if(dataset_name == "cifar10"):
     normalize = cifar10_normalize
-    denormalize = cifar10_denormalize
     num_classes = 10
     mean = [0.4914, 0.4822, 0.4465]
     std = [0.2470, 0.2435, 0.2616] 
@@ -140,7 +139,6 @@ if(dataset_name == "cifar10"):
     eval_fgsm_attack.set_normalization_used(mean = mean , std = std) 
 if(dataset_name == "tiny_imagenet"):
     normalize = tiny_imagenet_normalize
-    denormalize = tiny_imagenet_denormalize
     num_classes = 200
     mean = [0.485, 0.456, 0.406]
     std = [0.229, 0.224, 0.225]
