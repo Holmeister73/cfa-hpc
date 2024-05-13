@@ -121,11 +121,11 @@ else:
     best_model = ResNet18(dataset_name = dataset_name).to(device)
     best_model.eval()
     if weight_average_type == "ema":
-        ema_model = PreActResNet18(dataset_name = dataset_name).to(device)
+        ema_model = ResNet18(dataset_name = dataset_name).to(device)
         ema_model.eval()
         
     if weight_average_type == "fawa":
-        fawa_model = PreActResNet18(dataset_name = dataset_name).to(device)
+        fawa_model = ResNet18(dataset_name = dataset_name).to(device)
         fawa_model.eval()
 
 model.train()
