@@ -150,10 +150,6 @@ if(dataset_name == "tiny_imagenet"):
 optimizer = torch.optim.SGD(model.parameters(), lr = lr, momentum = momentum, weight_decay = weight_decay)
 scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[int(epoch_number/2),int(3/4*epoch_number)], gamma=0.1)
 loss_func=nn.CrossEntropyLoss()
-best_valid_accuracy = 0
-
-
-    
 
 eps_by_class = [epsilon for i in range(num_classes)]
 beta_by_class = [beta/(beta+1) for i in range(num_classes)]
