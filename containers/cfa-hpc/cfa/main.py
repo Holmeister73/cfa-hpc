@@ -96,11 +96,11 @@ detailed_statistics = args.detailed_statistics
 
 device= torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-#cifar10_normalize = transforms.Normalize(mean=[0.4914, 0.4822, 0.4465],
-#                                         std=[0.2470, 0.2435, 0.2616])
+cifar10_normalize = transforms.Normalize(mean=[0.4914, 0.4822, 0.4465],
+                                         std=[0.2470, 0.2435, 0.2616])
 
-#tiny_imagenet_normalize = transforms.Normalize(mean = [0.485, 0.456, 0.406],
-#                                         std = [0.229, 0.224, 0.225])
+tiny_imagenet_normalize = transforms.Normalize(mean = [0.485, 0.456, 0.406],
+                                         std = [0.229, 0.224, 0.225])
 
 train_loader, valid_loader, test_loader = get_loaders(dataset_name = dataset_name, valid_size = 0.02)   
 
