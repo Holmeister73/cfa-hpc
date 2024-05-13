@@ -11,8 +11,9 @@ from extra_datasets import TinyImageNet
 from torch.utils.data.sampler import SubsetRandomSampler
 from torch.utils.data import Dataset, DataLoader
 
-device= torch.device("cuda" if torch.cuda.is_available() else "cpu")
 torch.backends.cudnn.enabled = False
+device= torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 def one_hot_encode(label_list, num_classes):
     
