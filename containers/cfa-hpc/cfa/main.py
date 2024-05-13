@@ -9,7 +9,6 @@ import torchvision
 import numpy as np
 from model import ResNet18, PreActResNet18
 from utils import validation, calculate_test_accs, get_loaders, TRADES_loss, weight_average, get_average_of_min_20_percent
-from utils import cifar10_normalize, tiny_imagenet_normalize, cifar10_denormalize, tiny_imagenet_denormalize
 from evaluation import final_evaluation
 import math
 import argparse
