@@ -234,13 +234,12 @@ for epoch in range(epoch_number):
     elif training_type == "TRADES":
         eval_attack = eval_pgd_attack
 
-    logging.info("before validation")
     valid_clean_accuracies_by_class, valid_adv_accuracies_by_class, validloss = validation(model, valid_loader, normalize, eval_attack, 
                                                                                            num_classes = num_classes)
-    logging.info("after validation before test")
+   
     test_clean_accuracies_by_class, test_pgd_accuracies_by_class, test_fgsm_accuracies_by_class = calculate_test_accs(model, test_loader, normalize,
                                                                                      eval_pgd_attack, eval_fgsm_attack, num_classes = num_classes)
-    logging.info("after test")
+    
     train_robust_accuracies_by_class = [correct/sample for correct, sample in zip(train_robust_corrects_by_class, samples_by_class)]
     
     if ccm == "True" and epoch >= 9:
