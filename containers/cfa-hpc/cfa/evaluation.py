@@ -15,7 +15,8 @@ device= torch.device("cuda" if torch.cuda.is_available() else "cpu")
 def final_evaluation(model, test_loader, mean, std, normalize, num_classes = 10):
     
     autoattack = torchattacks.AutoAttack(model, norm='Linf', eps = 8/255, n_classes = num_classes)
-    autoattack.set_normalization_used(mean, std)
+    autoattack.normalization_used = {"mean": mean, "std": std}
+    #autoattack.set_normalization_used(mean, std)
     
     model.eval()
     samples_by_class = [0 for i in range(num_classes)]
