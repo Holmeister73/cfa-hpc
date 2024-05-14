@@ -182,7 +182,7 @@ for epoch in range(epoch_number):
                     loss, robust_output = cw_pgd_loss(model, images, labels, eps_by_class, step_size, num_steps, normalize)
                 else:
                     #pgd_attack = torchattacks.PGD(model, eps = epsilon, alpha = step_size, steps = num_steps)
-                    loss, robust_output = pgd_loss(model, images, labels, eps, step_size, num_steps, normalize)
+                    loss, robust_output = pgd_loss(model, images, labels, epsilon, step_size, num_steps, normalize)
                     
                 #pgd_attack.set_normalization_used(mean = mean , std = std)
                 
@@ -191,10 +191,10 @@ for epoch in range(epoch_number):
             elif attack_type == "fgsm":
                 if ccm == "True":
                     #fgsm_attack = torchattacks.FGSM(model, eps = batch_eps)
-                    loss, robust_output = cw_fgsm_loss(model, images, labels, batch_eps, normalize)
+                    loss, robust_output = cw_fgsm_loss(model, images, labels, eps_by_class, normalize)
                 else:
                     #fgsm_attack = torchattacks.FGSM(model, eps = epsilon)
-                    loss, robust_output = fgsm_loss(model, images, labels, eps, normalize)
+                    loss, robust_output = fgsm_loss(model, images, labels, epsilon, normalize)
                 #fgsm_attack.set_normalization_used(mean = mean , std = std)
                 #adv_images = fgsm_attack(images, labels)
                 
