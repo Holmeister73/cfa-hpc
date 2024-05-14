@@ -10,6 +10,7 @@ import torchvision.transforms as transforms
 import numpy as np
 from model import ResNet18, PreActResNet18
 from utils import validation, calculate_test_accs, get_loaders, TRADES_loss, weight_average, get_average_of_min_20_percent
+from utils import pgd_loss, fgsm_loss, cw_pgd_loss, cw_fgsm_loss
 from evaluation import final_evaluation
 import math
 import argparse
@@ -132,23 +133,23 @@ else:
         fawa_model = ResNet18(dataset_name = dataset_name).to(device)
         fawa_model.eval()
 
-eval_pgd_attack = torchattacks.PGD(model, eps = epsilon, alpha = step_size, steps = num_steps, random_start = False)
-eval_fgsm_attack = torchattacks.FGSM(model, eps = epsilon)
+#eval_pgd_attack = torchattacks.PGD(model, eps = epsilon, alpha = step_size, steps = num_steps, random_start = False)
+#eval_fgsm_attack = torchattacks.FGSM(model, eps = epsilon)
 
 if(dataset_name == "cifar10"):
     normalize = cifar10_normalize
     num_classes = 10
     mean = [0.4914, 0.4822, 0.4465]
     std = [0.2470, 0.2435, 0.2616] 
-    eval_pgd_attack.set_normalization_used(mean = mean , std = std)  
-    eval_fgsm_attack.set_normalization_used(mean = mean , std = std) 
+    #eval_pgd_attack.set_normalization_used(mean = mean , std = std)  
+    #eval_fgsm_attack.set_normalization_used(mean = mean , std = std) 
 if(dataset_name == "tiny_imagenet"):
     normalize = tiny_imagenet_normalize
     num_classes = 200
     mean = [0.485, 0.456, 0.406]
     std = [0.229, 0.224, 0.225]
-    eval_pgd_attack.set_normalization_used(mean = mean , std = std)  
-    eval_fgsm_attack.set_normalization_used(mean = mean , std = std)
+    #eval_pgd_attack.set_normalization_used(mean = mean , std = std)  
+    #eval_fgsm_attack.set_normalization_used(mean = mean , std = std)
 
     
 optimizer = torch.optim.SGD(model.parameters(), lr = lr, momentum = momentum, weight_decay = weight_decay)
@@ -172,33 +173,36 @@ for epoch in range(epoch_number):
     for i,(images,labels) in enumerate(train_loader):
         images = images.to(device)
         labels = labels.to(device)
-        batch_eps = torch.Tensor([eps_by_class[int(label)] for label in list(labels)])
+        #batch_eps = torch.Tensor([eps_by_class[int(label)] for label in list(labels)])
         
         if training_type == "vanilla":
             if attack_type == "pgd":
                 if ccm == "True":
-                    pgd_attack = torchattacks.PGD(model, eps = batch_eps, alpha = step_size, steps = num_steps)
+                    #pgd_attack = torchattacks.PGD(model, eps = batch_eps, alpha = step_size, steps = num_steps)
+                    loss, robust_output = cw_pgd_loss(model, images, labels, eps_by_class, step_size, num_steps, normalize)
                 else:
-                    pgd_attack = torchattacks.PGD(model, eps = epsilon, alpha = step_size, steps = num_steps)
+                    #pgd_attack = torchattacks.PGD(model, eps = epsilon, alpha = step_size, steps = num_steps)
+                    loss, robust_output = pgd_loss(model, images, labels, eps, step_size, num_steps, normalize)
                     
-                pgd_attack.set_normalization_used(mean = mean , std = std)
+                #pgd_attack.set_normalization_used(mean = mean , std = std)
                 
-                adv_images = pgd_attack(images, labels)
+                #adv_images = pgd_attack(images, labels)
                 
             elif attack_type == "fgsm":
                 if ccm == "True":
-                    fgsm_attack = torchattacks.FGSM(model, eps = batch_eps)
+                    #fgsm_attack = torchattacks.FGSM(model, eps = batch_eps)
+                    loss, robust_output = cw_fgsm_loss(model, images, labels, batch_eps, normalize)
                 else:
-                    fgsm_attack = torchattacks.FGSM(model, eps = epsilon)
-                    
-                fgsm_attack.set_normalization_used(mean = mean , std = std)
-                adv_images = fgsm_attack(images, labels)
+                    #fgsm_attack = torchattacks.FGSM(model, eps = epsilon)
+                    loss, robust_output = fgsm_loss(model, images, labels, eps, normalize)
+                #fgsm_attack.set_normalization_used(mean = mean , std = std)
+                #adv_images = fgsm_attack(images, labels)
                 
-            predictions = model(normalize(adv_images))
-            loss=loss_func(predictions,labels)
+            #predictions = model(normalize(adv_images))
+            #loss=loss_func(predictions,labels)
             
-            _,predicted=torch.max(predictions,1)
-            
+            #_,predicted=torch.max(predictions,1)
+            _,predicted = torch.max(robust_output,1)
             for prediction, label in zip(list(predicted), list(labels)):
                 if prediction == label: 
                     train_robust_corrects_by_class[int(label)] += 1
@@ -207,11 +211,10 @@ for epoch in range(epoch_number):
             
             
         elif training_type == "TRADES":
-            loss, adv_images = TRADES_loss(model, images, labels, normalize, epsilon = epsilon, beta = beta, step_size = 0.003, num_steps = num_steps, 
+            loss, robust_output = TRADES_loss(model, images, labels, normalize, epsilon = epsilon, beta = beta, step_size = 0.003, num_steps = num_steps, 
                            ccr = ccr, ccm= ccm, eps_by_class = eps_by_class, beta_by_class = beta_by_class)
             
-            predictions = model(normalize(adv_images))
-            _,predicted=torch.max(predictions,1)
+            _,predicted=torch.max(robust_output,1)
             
             for prediction, label in zip(list(predicted), list(labels)):
                 if prediction == label: 
@@ -225,28 +228,33 @@ for epoch in range(epoch_number):
         AverageLoss+=loss.item()*images.size(0)
         total_samples += images.size(0)
     
-    if training_type == "vanilla":
-        if attack_type == "pgd":    
-            eval_attack = eval_pgd_attack
-        elif attack_type == "fgsm":
-            eval_attack = eval_fgsm_attack
-    elif training_type == "TRADES":
-        eval_attack = eval_pgd_attack
-
-    valid_clean_accuracies_by_class, valid_adv_accuracies_by_class, validloss = validation(model, valid_loader, normalize, eval_attack, 
+    #if training_type == "vanilla":
+    #    if attack_type == "pgd":    
+            #eval_attack = eval_pgd_attack
+    #        eval_attack = "pgd"
+    #    elif attack_type == "fgsm":
+            #eval_attack = eval_fgsm_attack
+    #        eval_attack = fgsm_loss
+    #elif training_type == "TRADES":
+        #eval_attack = eval_pgd_attack
+    #    eval_attack = pgd_loss
+    eval_attack = "pgd"
+    if attack_type == "fgsm":
+      eval_attack = "fgsm"
+    
+    valid_clean_accuracies_by_class, valid_adv_accuracies_by_class, validloss = validation(model, valid_loader, normalize, attack = eval_attack, 
                                                                                            num_classes = num_classes)
    
-    test_clean_accuracies_by_class, test_pgd_accuracies_by_class, test_fgsm_accuracies_by_class = calculate_test_accs(model, test_loader, normalize,
-                                                                                     eval_pgd_attack, eval_fgsm_attack, num_classes = num_classes)
+    test_clean_accuracies_by_class, test_pgd_accuracies_by_class, test_fgsm_accuracies_by_class = calculate_test_accs(model, test_loader, normalize, num_classes = num_classes)
     
     train_robust_accuracies_by_class = [correct/sample for correct, sample in zip(train_robust_corrects_by_class, samples_by_class)]
     
     if ccm == "True" and epoch >= 9:
-        eps_by_class = [eps*(lambda_1 + train_robust_acc) for eps, train_robust_acc in zip(eps_by_class, train_robust_accuracies_by_class)]    
+        eps_by_class = [eps*(lambda_1 + train_robust_acc) for train_robust_acc in train_robust_accuracies_by_class)]    
     
     if ccr == "True" and epoch >= 9:
         beta_by_class = [((beta/(1-beta))*(lambda_2 + train_robust_acc))/(1+((beta/(1-beta))*(lambda_2 + train_robust_acc))) 
-                         for beta, train_robust_acc in zip(beta_by_class, train_robust_accuracies_by_class)]
+                         for  train_robust_acc in train_robust_accuracies_by_class]
     
     if weight_average_type == "ema":
         if epoch == 49:
@@ -274,7 +282,7 @@ for epoch in range(epoch_number):
         if epoch == 49:
             weight_average(fawa_model, model, decay_rate, init = True)
             fawa_test_clean_accuracies_by_class, fawa_test_pgd_accuracies_by_class, fawa_test_fgsm_accuracies_by_class = calculate_test_accs(fawa_model, 
-                                                           test_loader, normalize, eval_pgd_attack, eval_fgsm_attack, num_classes = num_classes)
+                                                           test_loader, normalize, num_classes = num_classes)
         
         elif epoch > 49:
             if dataset_name == "cifar10":
@@ -285,7 +293,7 @@ for epoch in range(epoch_number):
                     weight_average(fawa_model, model, decay_rate, init = False)
             
             fawa_test_clean_accuracies_by_class, fawa_test_pgd_accuracies_by_class, fawa_test_fgsm_accuracies_by_class = calculate_test_accs(fawa_model, 
-                                                           test_loader, normalize, eval_pgd_attack, eval_fgsm_attack, num_classes = num_classes)
+                                                           test_loader, normalize,  num_classes = num_classes)
         
             if attack_type == "fgsm":
                 fawa_test_robust_accuracies_by_class = fawa_test_fgsm_accuracies_by_class
