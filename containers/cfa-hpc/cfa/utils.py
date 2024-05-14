@@ -155,7 +155,7 @@ def TRADES_loss(model, original_imgs, labels, normalize, epsilon = 8/255, beta =
         batch_beta = torch.tensor([beta_by_class[int(label)] for label in labels])
         assert len(batch_beta) == len(loss_robust)   
                                         
-    print(batch_beta.shape, loss_natural.shape, loss_robust.shape)
+    #print(batch_beta.shape, loss_natural.shape, loss_robust.shape)
     
     if ccr == "True":
         loss = ((1-batch_beta) * loss_natural + batch_beta * loss_robust).sum()
