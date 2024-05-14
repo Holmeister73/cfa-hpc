@@ -55,7 +55,7 @@ def cw_pgd_loss(model, x, y, eps, alpha, n_iters, normalize):
     delta = torch.zeros_like(x).to(x.device)
     base = torch.ones_like(x).to(x.device)
     for sample in range(len(x)):
-        base[sample] *= eps[sample]
+        base[sample] *= eps[y[sample]]
     eps = base.clone().to(x.device)
 
     delta = (torch.rand_like(delta) - 0.5) * 2
@@ -96,7 +96,7 @@ def fgsm_loss(model, x, y, eps, normalize):
 def cw_fgsm_loss(model, x, y, eps, normalize):
     base = torch.ones_like(x).to(x.device)
     for sample in range(len(x)):
-        base[sample] *= eps[sample]
+        base[sample] *= eps[y[sample]]
     eps = base.clone().to(x.device)
     x = x.clone().detach().to(device)
     x.requires_grad = True
