@@ -18,7 +18,7 @@ import pandas as pd
 import datasets
 import logging
 
-logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(level = logging.INFO, format='%(name)s - %(levelname)s - %(message)s')
 
 parser=argparse.ArgumentParser()
 
