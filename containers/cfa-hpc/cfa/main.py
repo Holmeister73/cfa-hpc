@@ -180,7 +180,9 @@ for epoch in range(epoch_number):
                     pgd_attack = torchattacks.PGD(model, eps = epsilon, alpha = step_size, steps = num_steps)
                     
                 pgd_attack.set_normalization_used(mean = mean , std = std)
+                print("Before attack")
                 adv_images = pgd_attack(images, labels)
+                print("After attack")
             elif attack_type == "fgsm":
                 if ccm == "True":
                     fgsm_attack = torchattacks.FGSM(model, eps = batch_eps)
@@ -228,9 +230,10 @@ for epoch in range(epoch_number):
             eval_attack = eval_fgsm_attack
     elif training_type == "TRADES":
         eval_attack = eval_pgd_attack
-        
+    print("Before validation attack") 
     valid_clean_accuracies_by_class, valid_adv_accuracies_by_class, validloss = validation(model, valid_loader, normalize, eval_attack, 
                                                                                            num_classes = num_classes)
+    print("After validation attack")
     test_clean_accuracies_by_class, test_pgd_accuracies_by_class, test_fgsm_accuracies_by_class = calculate_test_accs(model, test_loader, normalize,
                                                                                      eval_pgd_attack, eval_fgsm_attack, num_classes = num_classes)
     
