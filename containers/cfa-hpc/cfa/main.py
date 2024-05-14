@@ -329,6 +329,7 @@ logging.info("Training is Done")
 
 final_clean_accuracies_by_class, final_robust_accuracies_by_class = final_evaluation(model, test_loader, mean, std, normalize, num_classes = num_classes)
 
+logging.info("Autoattack is Done")
 final_df = pd.DataFrame([final_clean_accuracies_by_class, final_robust_accuracies_by_class])
 
 final_hf = datasets.Dataset.from_pandas(final_df)
@@ -346,3 +347,4 @@ if detailed_statistics == "True":
                             attack_type = attack_type, weight_average_type = weight_average_type), token = hf_token)
 
 
+logging.info("Push to hub is done")
