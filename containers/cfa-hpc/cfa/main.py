@@ -259,7 +259,7 @@ for epoch in range(epoch_number):
         if epoch == 49:
             weight_average(ema_model, model, decay_rate, init = True)
             ema_test_clean_accuracies_by_class, ema_test_pgd_accuracies_by_class, ema_test_fgsm_accuracies_by_class = calculate_test_accs(ema_model, 
-                                                           test_loader, normalize, eval_pgd_attack, eval_fgsm_attack, num_classes = num_classes)
+                                                           test_loader, normalize, num_classes = num_classes)
         elif epoch > 49:
             if dataset_name == "cifar10":
                 if min(valid_adv_accuracies_by_class) >= threshold:
@@ -268,7 +268,7 @@ for epoch in range(epoch_number):
                 if get_average_of_min_20_percent(valid_adv_accuracies_by_class) >= threshold:
                     weight_average(ema_model, model, decay_rate, init = False)
             ema_test_clean_accuracies_by_class, ema_test_pgd_accuracies_by_class, ema_test_fgsm_accuracies_by_class = calculate_test_accs(ema_model, 
-                                                           test_loader, normalize, eval_pgd_attack, eval_fgsm_attack, num_classes = num_classes)
+                                                           test_loader, normalize, num_classes = num_classes)
             if attack_type == "fgsm":
                 ema_test_robust_accuracies_by_class = ema_test_fgsm_accuracies_by_class
             else:
