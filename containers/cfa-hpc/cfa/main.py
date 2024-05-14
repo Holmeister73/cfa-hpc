@@ -16,6 +16,9 @@ import argparse
 import torchattacks
 import pandas as pd
 import datasets
+import logging
+
+logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s')
 
 parser=argparse.ArgumentParser()
 
@@ -302,8 +305,8 @@ for epoch in range(epoch_number):
             weight_average(best_model, model, decay_rate, init = True)
             best_model_threshold = sum(test_robust_accuracies_by_class)/len(test_robust_accuracies_by_class) + min(test_robust_accuracies_by_class)
     scheduler.step()
-    print("Training loss is {loss} at the end of epoch  {epoch}".format(loss = AverageLoss/total_samples, epoch = epoch + 1))
-    print("Average test robustness accuracy = ",sum(test_pgd_accuracies_by_class)/len(test_pgd_accuracies_by_class))
+    logging.info("Training loss is {loss} at the end of epoch  {epoch}".format(loss = AverageLoss/total_samples, epoch = epoch + 1))
+    logging.info("Average test robustness accuracy = {robust_acc}".format(robust_acc = sum(test_pgd_accuracies_by_class)/len(test_pgd_accuracies_by_class))
     if weight_average_type == "ema":
         if epoch >= 49:
             classwise_test_pgd_accuracies_for_all_epochs.append(ema_test_pgd_accuracies_by_class)
@@ -321,7 +324,7 @@ for epoch in range(epoch_number):
         classwise_test_fgsm_accuracies_for_all_epochs.append(test_fgsm_accuracies_by_class)
         classwise_test_clean_accuracies_for_all_epochs.append(test_clean_accuracies_by_class)
     
-print("Training is Done")
+logging.info("Training is Done")
 
 
 final_clean_accuracies_by_class, final_robust_accuracies_by_class = final_evaluation(model, test_loader, mean, std, normalize, num_classes = num_classes)
