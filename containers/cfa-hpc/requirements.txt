@@ -1,4 +1,4 @@
-torch = 2.2.2
+torch == 2.2.2
 datasets>=2.14.3
 pandas>=1.2.4
 numpy>=1.19.4
