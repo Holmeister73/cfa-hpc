@@ -182,7 +182,7 @@ def weight_average(model, new_model, decay_rate, init=False):
     
     return 
 
-def validation(model, valid_loader, normalize, attack, num_classes = 10):
+def validation(model, valid_loader, normalize, attack = "pgd", num_classes = 10):
 
     model.eval()
     ValidLoss = 0
@@ -195,15 +195,20 @@ def validation(model, valid_loader, normalize, attack, num_classes = 10):
     for j,(images,labels) in enumerate(valid_loader):
         images=images.to(device)
         labels=labels.to(device)
-        adv_images = attack(images, labels)
+        #adv_images = attack(images, labels)
         clean_predictions = model(normalize(images))
         _,clean_predicted=torch.max(clean_predictions,1)
         
         loss=loss_func(clean_predictions,labels)
-        
-        adv_predictions = model(normalize(adv_images))
+        ValidLoss += loss.item()*labels.size(0)
+        if attack == "pgd":
+            _, robust_output = pgd_loss(model, images, labels, 8/255, 2/255, 4, normalize)
+        else:
+            _, robust_output = fgsm_loss(model, images, labels, 8/255, normalize)
+        #adv_predictions = model(normalize(adv_images))
        
-        _,adv_predicted=torch.max(adv_predictions,1)
+        #_,adv_predicted=torch.max(adv_predictions,1)
+        _,adv_predicted=torch.max(robust_output,1)
         
         for prediction, label in zip(list(clean_predicted), list(labels)):
             if prediction == label: 
@@ -214,7 +219,7 @@ def validation(model, valid_loader, normalize, attack, num_classes = 10):
             if prediction == label: 
                 adv_corrects_by_class[int(label)] += 1
             
-        ValidLoss += loss.item()*labels.size(0)
+        
     
     clean_accuracies_by_class = [correct/total for correct,total in zip(clean_corrects_by_class, samples_by_class)]
     adv_accuracies_by_class = [correct/total for correct,total in zip(adv_corrects_by_class, samples_by_class)]
@@ -222,7 +227,7 @@ def validation(model, valid_loader, normalize, attack, num_classes = 10):
         
     return clean_accuracies_by_class, adv_accuracies_by_class, ValidLoss    
 
-def calculate_test_accs(model, test_loader, normalize, pgd_attack, fgsm_attack, num_classes = 10):
+def calculate_test_accs(model, test_loader, normalize, num_classes = 10):
     
     
     model.eval()
@@ -234,16 +239,18 @@ def calculate_test_accs(model, test_loader, normalize, pgd_attack, fgsm_attack, 
     for j,(images,labels) in enumerate(test_loader):
         images=images.to(device)
         labels=labels.to(device)
-        pgd_adv_images = pgd_attack(images, labels)
-        fgsm_adv_images = fgsm_attack(images, labels)
+        #pgd_adv_images = pgd_attack(images, labels)
+        #fgsm_adv_images = fgsm_attack(images, labels)
         
         clean_predictions = model(normalize(images))
         _,clean_predicted=torch.max(clean_predictions,1)
     
-        pgd_predictions = model(normalize(pgd_adv_images))
+        #pgd_predictions = model(normalize(pgd_adv_images))
+        _,pgd_predictions = pgd_loss(model, images, labels, 8/255, 2/255, 4, normalize)
         _,pgd_predicted=torch.max(pgd_predictions,1)
         
-        fgsm_predictions = model(normalize(fgsm_adv_images))
+        #fgsm_predictions = model(normalize(fgsm_adv_images))
+        _,fgsm_predictions = fgsm_loss(model, images, labels, 8/255, normalize)
         _,fgsm_predicted=torch.max(fgsm_predictions,1)
         
         for prediction, label in zip(list(clean_predicted), list(labels)):
