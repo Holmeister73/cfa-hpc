@@ -132,8 +132,7 @@ else:
         fawa_model = ResNet18(dataset_name = dataset_name).to(device)
         fawa_model.eval()
 
-model.train()
-eval_pgd_attack = torchattacks.PGD(model, eps = epsilon, alpha = step_size, steps = num_steps)
+eval_pgd_attack = torchattacks.PGD(model, eps = epsilon, alpha = step_size, steps = num_steps, random_start = False)
 eval_fgsm_attack = torchattacks.FGSM(model, eps = epsilon)
 
 if(dataset_name == "cifar10"):
