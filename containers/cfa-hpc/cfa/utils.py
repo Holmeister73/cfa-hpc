@@ -30,6 +30,87 @@ def get_average_of_min_20_percent(x):   # x will be a list
     
     return sum(x_min_20)/len(x_min_20)
 
+def pgd_loss(model, x, y, eps, alpha, n_iters, normalize):
+    delta = torch.zeros_like(x).to(x.device)
+    delta.uniform_(-eps, eps)
+    delta = torch.clamp(delta, 0-x, 1-x)
+    delta.requires_grad = True
+    for _ in range(n_iters):
+        output = model(normalize(x+delta))
+        loss = F.cross_entropy(output, y)
+        loss.backward()
+        grad = delta.grad.detach()
+        d = torch.clamp(delta + alpha * torch.sign(grad), min=-eps, max=eps)
+        d = torch.clamp(d, 0 - x, 1 - x)
+        delta.data = d
+        delta.grad.zero_()
+
+    robust_output = model(normalize(x+delta))
+    loss_func = nn.CrossEntropyLoss()
+    loss = loss_func(robust_output, y)
+    
+    return loss, robust_output.clone().detach()
+
+def cw_pgd_loss(model, x, y, eps, alpha, n_iters, normalize):
+    delta = torch.zeros_like(x).to(x.device)
+    base = torch.ones_like(x).to(x.device)
+    for sample in range(len(x)):
+        base[sample] *= eps[sample]
+    eps = base.clone().to(x.device)
+
+    delta = (torch.rand_like(delta) - 0.5) * 2
+    delta.to(x.device)
+    delta = delta * eps  # remargin
+
+    delta = torch.clamp(delta, 0-x, 1-x)
+    delta.requires_grad = True
+    for _ in range(n_iters):
+        output = model(normalize(x+delta))
+        loss = F.cross_entropy(output, y)
+        loss.backward()
+        grad = delta.grad.detach()
+        d = torch.clamp(delta + alpha * torch.sign(grad), min=-eps, max=eps)
+        d = torch.clamp(d, 0 - x, 1 - x)
+        delta.data = d
+        delta.grad.zero_()
+    delta.detach()
+    robust_output = model(normalize(x+delta))
+    loss_func = nn.CrossEntropyLoss()
+    loss = loss_func(robust_output, y)
+    return loss, robust_output.clone().detach()
+
+def fgsm_loss(model, x, y, eps, normalize):
+    x = x.clone().detach().to(device)
+    x.requires_grad = True
+    output = model(normalize(x))
+    loss = F.cross_entropy(output, y)
+    grad = torch.autograd.grad(loss, x, retain_graph=False, create_graph=False)[0]
+    x_adv = x + eps * grad.sign()
+    x_adv = torch.clamp(x_adv, min=0, max=1).detach()
+    robust_output = model(normalize(x_adv))
+    loss_func = nn.CrossEntropyLoss()
+    loss = loss_func(robust_output, y)
+    
+    return loss, robust_output.clone().detach()
+
+def cw_fgsm_loss(model, x, y, eps, normalize):
+    base = torch.ones_like(x).to(x.device)
+    for sample in range(len(x)):
+        base[sample] *= eps[sample]
+    eps = base.clone().to(x.device)
+    x = x.clone().detach().to(device)
+    x.requires_grad = True
+    output = model(normalize(x))
+    loss = F.cross_entropy(output, y)
+    grad = torch.autograd.grad(loss, x, retain_graph=False, create_graph=False)[0]
+    x_adv = x + eps * grad.sign()
+    x_adv = torch.clamp(x_adv, min=0, max=1).detach()
+    robust_output = model(normalize(x_adv))
+    loss_func = nn.CrossEntropyLoss()
+    loss = loss_func(robust_output, y)
+    
+    return loss, robust_output.clone().detach()
+    
 def TRADES_loss(model, original_imgs, labels, normalize, epsilon = 8/255, beta = 6, step_size=0.003, num_steps=10, 
                ccr = "False", ccm= "False", eps_by_class = None, beta_by_class = None):  
     
