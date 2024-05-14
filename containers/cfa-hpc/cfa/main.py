@@ -250,11 +250,10 @@ for epoch in range(epoch_number):
     train_robust_accuracies_by_class = [correct/sample for correct, sample in zip(train_robust_corrects_by_class, samples_by_class)]
     
     if ccm == "True" and epoch >= 9:
-        eps_by_class = [eps*(lambda_1 + train_robust_acc) for train_robust_acc in train_robust_accuracies_by_class)]    
+        eps_by_class = [eps*(lambda_1 + train_robust_acc) for train_robust_acc in train_robust_accuracies_by_class]    
     
     if ccr == "True" and epoch >= 9:
-        beta_by_class = [((beta/(1-beta))*(lambda_2 + train_robust_acc))/(1+((beta/(1-beta))*(lambda_2 + train_robust_acc))) 
-                         for  train_robust_acc in train_robust_accuracies_by_class]
+        beta_by_class = [beta*(lambda_2 + train_robust_acc)/(beta*(lambda_2 + train_robust_acc)+1) for  train_robust_acc in train_robust_accuracies_by_class]
     
     if weight_average_type == "ema":
         if epoch == 49:
