@@ -30,7 +30,7 @@ def get_average_of_min_20_percent(x):   # x will be a list
     
     return sum(x_min_20)/len(x_min_20)
 
-def pgd_loss(model, x, y, eps, alpha, n_iters, normalize):
+def pgd_loss(model, x, y, eps, alpha, n_iters, normalize): #This function is the modified version of the one from https://github.com/PKU-ML/CFA/blob/main/attack.py
     delta = torch.zeros_like(x).to(x.device)
     delta.uniform_(-eps, eps)
     delta = torch.clamp(delta, 0-x, 1-x)
@@ -51,7 +51,7 @@ def pgd_loss(model, x, y, eps, alpha, n_iters, normalize):
     
     return loss, robust_output.clone().detach()
 
-def cw_pgd_loss(model, x, y, eps, alpha, n_iters, normalize):
+def cw_pgd_loss(model, x, y, eps, alpha, n_iters, normalize): #This function is the modified version of the one from https://github.com/PKU-ML/CFA/blob/main/attack.py
     delta = torch.zeros_like(x).to(x.device)
     base = torch.ones_like(x).to(x.device)
     for sample in range(len(x)):
