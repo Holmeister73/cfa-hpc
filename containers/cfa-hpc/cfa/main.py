@@ -333,15 +333,15 @@ for epoch in range(epoch_number):
 logging.info("Training is Done")
 
 if weight_average_type == "ema":
-    final_clean_accuracies_by_class_last, final_robust_accuracies_by_class_last = final_evaluation(ema_model, test_loader, mean, std, normalize, num_classes = num_classes)
+    final_clean_accuracies_by_class_last, final_robust_accuracies_by_class_last = final_evaluation(ema_model, test_loader, mean, std, normalize, dataset_name = dataset_name)
 elif weight_average_type == "fawa":
-    final_clean_accuracies_by_class_last, final_robust_accuracies_by_class_last = final_evaluation(fawa_model, test_loader, mean, std, normalize, num_classes = num_classes)
+    final_clean_accuracies_by_class_last, final_robust_accuracies_by_class_last = final_evaluation(fawa_model, test_loader, mean, std, normalize, dataset_name = dataset_name)
 else:
-    final_clean_accuracies_by_class_last, final_robust_accuracies_by_class_last = final_evaluation(model, test_loader, mean, std, normalize, num_classes = num_classes)
+    final_clean_accuracies_by_class_last, final_robust_accuracies_by_class_last = final_evaluation(model, test_loader, mean, std, normalize, dataset_name = dataset_name)
 
 logging.info("First Autoattack is Done")
 
-final_clean_accuracies_by_class_best, final_robust_accuracies_by_class_best = final_evaluation(best_model, test_loader, mean, std, normalize, num_classes = num_classes)
+final_clean_accuracies_by_class_best, final_robust_accuracies_by_class_best = final_evaluation(best_model, test_loader, mean, std, normalize, dataset_name = dataset_name)
 
 logging.info("Autoattack is Done")
 final_df = pd.DataFrame([final_clean_accuracies_by_class_best, final_robust_accuracies_by_class_best,final_clean_accuracies_by_class_last, final_robust_accuracies_by_class_last ])
