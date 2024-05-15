@@ -12,9 +12,14 @@ import torchattacks
 
 device= torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def final_evaluation(model, test_loader, mean, std, normalize, num_classes = 10):
-    
-    autoattack = torchattacks.AutoAttack(model, norm='Linf', eps = 8/255, n_classes = num_classes)
+def final_evaluation(model, test_loader, mean, std, normalize, dataset_name = "cifar10"):
+    if dataset_name == "cifar10":
+        num_classes = 10
+        epsilon = 8/255
+    elif dataset_name == "tiny_imagenet":
+        num_classes = 200
+        epsilon = 4/255
+    autoattack = torchattacks.AutoAttack(model, norm='Linf', eps = epsilon, n_classes = num_classes)
     autoattack.normalization_used = {"mean": mean, "std": std}
     autoattack._set_normalization_applied(False)
     #autoattack.set_normalization_used(mean, std)
