@@ -19,9 +19,20 @@ def final_evaluation(model, test_loader, mean, std, normalize, dataset_name = "c
     elif dataset_name == "tiny_imagenet":
         num_classes = 200
         epsilon = 4/255
-    autoattack = torchattacks.AutoAttack(model, norm='Linf', eps = epsilon, n_classes = num_classes)
-    autoattack.normalization_used = {"mean": mean, "std": std}
-    autoattack._set_normalization_applied(False)
+    atk1 = torchattacks.APGD(model, eps = epsilon, norm = "Linf", loss = "ce", n_restarts = 1)
+    atk2 = torchattacks.APGDT(model, eps = epsilon, norm = "Linf", n_classes = num_classes, n_restarts = 1)
+    atk3 = torchattacks.FAB(model, eps = epsilon, norm = "Linf", multi_targeted = True, n_classes = num_classes, n_restarts = 1)
+    atk4 = torchattacks.Square(model, eps = epsilon, norm = "Linf", n_queries = 5000, n_restarts = 1)
+    attacks = [atk1, atk2, atk3, atk4]
+    for attack in attacks:
+        attack.normalization_used = {"mean": mean, "std": std}
+        attack._set_normalization_applied(False)
+        
+    multiattack = torchattacks.MultiAttack(attacks)
+    autoattack = torchattacks.AutoAttack(model)
+    autoattack._autoattack = multiattack
+    #autoattack.normalization_used = {"mean": mean, "std": std}
+    #autoattack._set_normalization_applied(False)
     #autoattack.set_normalization_used(mean, std)
     
     model.eval()
