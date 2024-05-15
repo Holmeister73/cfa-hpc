@@ -7,3 +7,4 @@ torchvision>=0.8.2
 scipy>=0.14.0
 tqdm>=4.56.1
 requests~=2.25.1
+git+https://github.com/fra31/auto-attack
