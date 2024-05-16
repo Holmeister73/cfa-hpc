@@ -25,7 +25,7 @@ def final_evaluation(model, test_loader, mean, std, normalize, dataset_name = "c
     atk4 = torchattacks.Square(model, eps = epsilon, norm = "Linf", n_queries = 5000, n_restarts = 1)
     attacks = [atk1, atk2, atk3, atk4]
     for attack in attacks:
-        attack.normalization_used = {"mean": mean, "std": std}
+        attack.normalization_used = {"mean": torch.Tensor(mean), "std": torch.Tensor(std)}
         attack._set_normalization_applied(False)
         
     multiattack = torchattacks.MultiAttack(attacks)
