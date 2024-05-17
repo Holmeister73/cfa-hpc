@@ -132,7 +132,10 @@ def TRADES_loss(model, original_imgs, labels, normalize, epsilon = 8/255, beta =
         grad = torch.autograd.grad(loss_kl, [adv_imgs])[0]
         adv_imgs = adv_imgs.detach() + step_size * torch.sign(grad.detach())
         if ccm == "True":
-            batch_eps = torch.tensor([eps_by_class[int(label)] for label in labels])
+            base = torch.ones_like(original_imgs).to(original_imgs.device)
+    		for sample in range(len(original_imgs)):
+      	        base[sample] *= eps_by_class[labels[sample]]
+    		batch_eps = base.clone().to(original_imgs.device)
             adv_imgs =  torch.clamp(adv_imgs, min = original_imgs - batch_eps, max = original_imgs + batch_eps)
         else:
             adv_imgs =  torch.clamp(adv_imgs, min = original_imgs - epsilon, max = original_imgs + epsilon)
