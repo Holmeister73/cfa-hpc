@@ -328,14 +328,15 @@ def get_loaders(dataset_name = "cifar10", valid_size = 0.02):
         num_classes = 200
         valid_amount = int(np.floor(valid_size * num_train)/num_classes)
         class_indices = [[] for i in range(num_classes)]
-        labels = cifar10_train.targets
+        labels = tiny_imagenet_train.targets
         for index in indices:
             class_indices[labels[index]].append(index)
             
         for i in range(num_classes):
             valid_indices += class_indices[i][:valid_amount]
             train_indices += class_indices[i][valid_amount:]
-       
+        train_sampler = SubsetRandomSampler(train_indices)
+        valid_sampler = SubsetRandomSampler(valid_indices)
         train_loader = DataLoader(tiny_imagenet_train, batch_size = 128, sampler = train_sampler)
         valid_loader = DataLoader(tiny_imagenet_valid, batch_size = 128, shuffle = valid_sampler)
         test_loader = DataLoader(tiny_imagenet_test, batch_size = 128, shuffle = False)
