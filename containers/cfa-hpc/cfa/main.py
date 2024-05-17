@@ -369,7 +369,7 @@ if dataset_name == "cifar10":
     logging.info("Worst clean accuracy for last model = {worst_clean_last}".format(worst_clean_last = min(final_clean_accuracies_by_class_last)))
     logging.info("Average robust accuracy for last model = {avg_robust_last}".format(avg_robust_last = sum(final_robust_accuracies_by_class_last)/len(final_robust_accuracies_by_class_last)))
     logging.info("Worst robust accuracy for last model = {worst_robust_last}".format(worst_robust_last = min(final_robust_accuracies_by_class_last)))
-elif dataset_name == "tiny_imagenet"):
+elif dataset_name == "tiny_imagenet":
     logging.info("Average clean accuracy for best model = {avg_clean_best}".format(avg_clean_best = sum(final_clean_accuracies_by_class_best)/len(final_clean_accuracies_by_class_best)))
     logging.info("Worst clean accuracy for best model = {worst_clean_best}".format(worst_clean_best = get_average_of_min_20_percent(final_clean_accuracies_by_class_best)))
     logging.info("Average robust accuracy for best model = {avg_robust_best}".format(avg_robust_best = sum(final_robust_accuracies_by_class_best)/len(final_robust_accuracies_by_class_best)))
