@@ -162,7 +162,7 @@ classwise_test_pgd_accuracies_for_all_epochs = []
 classwise_test_fgsm_accuracies_for_all_epochs = []
 classwise_test_clean_accuracies_for_all_epochs = []
 best_model_threshold = 0
-
+best_model_epoch = -1
 for epoch in range(epoch_number):
     AverageLoss = 0
     model.train()
@@ -280,6 +280,7 @@ for epoch in range(epoch_number):
             if sum(test_robust_accuracies_by_class)/len(test_robust_accuracies_by_class) + min(test_robust_accuracies_by_class) > best_model_threshold:
                 weight_average(best_model, ema_model, decay_rate, init = True)
                 best_model_threshold = sum(test_robust_accuracies_by_class)/len(test_robust_accuracies_by_class) + min(test_robust_accuracies_by_class)
+                best_model_epoch = epoch
         else:
             if attack_type == "fgsm":
                 test_robust_accuracies_by_class = test_fgsm_accuracies_by_class
@@ -312,6 +313,7 @@ for epoch in range(epoch_number):
             if sum(test_robust_accuracies_by_class)/len(test_robust_accuracies_by_class) + min(test_robust_accuracies_by_class) > best_model_threshold:
                 weight_average(best_model, fawa_model, decay_rate, init = True)
                 best_model_threshold = sum(test_robust_accuracies_by_class)/len(test_robust_accuracies_by_class) + min(test_robust_accuracies_by_class)
+                best_model_epoch = epoch
         else:
             if attack_type == "fgsm":
                 test_robust_accuracies_by_class = test_fgsm_accuracies_by_class
@@ -326,6 +328,7 @@ for epoch in range(epoch_number):
         if sum(test_robust_accuracies_by_class)/len(test_robust_accuracies_by_class) + min(test_robust_accuracies_by_class) > best_model_threshold:
             weight_average(best_model, model, decay_rate, init = True)
             best_model_threshold = sum(test_robust_accuracies_by_class)/len(test_robust_accuracies_by_class) + min(test_robust_accuracies_by_class)
+            best_model_epoch = epoch
     scheduler.step()
     logging.info("Training loss is {loss} at the end of epoch  {epoch}".format(loss = AverageLoss/total_samples, epoch = epoch + 1))
     logging.info("Average test robustness accuracy = {robust_acc}".format(robust_acc = sum(test_robust_accuracies_by_class)/len(test_robust_accuracies_by_class)))
@@ -347,7 +350,7 @@ for epoch in range(epoch_number):
         classwise_test_clean_accuracies_for_all_epochs.append(test_clean_accuracies_by_class)
     
 logging.info("Training is Done")
-
+logging.info("Best model is from epoch {best_model_epoch}".format(best_model_epoch = best_model_epoch))
 if weight_average_type == "ema":
     final_clean_accuracies_by_class_last, final_robust_accuracies_by_class_last = final_evaluation(ema_model, test_loader, mean, std, normalize, dataset_name = dataset_name)
 elif weight_average_type == "fawa":
@@ -371,13 +374,13 @@ if dataset_name == "cifar10":
     logging.info("Worst robust accuracy for last model = {worst_robust_last}".format(worst_robust_last = min(final_robust_accuracies_by_class_last)))
 elif dataset_name == "tiny_imagenet":
     logging.info("Average clean accuracy for best model = {avg_clean_best}".format(avg_clean_best = sum(final_clean_accuracies_by_class_best)/len(final_clean_accuracies_by_class_best)))
-    logging.info("Worst clean accuracy for best model = {worst_clean_best}".format(worst_clean_best = get_average_of_min_20_percent(final_clean_accuracies_by_class_best)))
+    logging.info("Worst 20 percent clean accuracy for best model = {worst_clean_best}".format(worst_clean_best = get_average_of_min_20_percent(final_clean_accuracies_by_class_best)))
     logging.info("Average robust accuracy for best model = {avg_robust_best}".format(avg_robust_best = sum(final_robust_accuracies_by_class_best)/len(final_robust_accuracies_by_class_best)))
-    logging.info("Worst robust accuracy for best model = {worst_robust_best}".format(worst_robust_best = get_average_of_min_20_percent(final_robust_accuracies_by_class_best)))
+    logging.info("Worst 20 percent robust accuracy for best model = {worst_robust_best}".format(worst_robust_best = get_average_of_min_20_percent(final_robust_accuracies_by_class_best)))
     logging.info("Average clean accuracy for last model = {avg_clean_last}".format(avg_clean_last = sum(final_clean_accuracies_by_class_last)/len(final_clean_accuracies_by_class_last)))
-    logging.info("Worst clean accuracy for last model = {worst_clean_last}".format(worst_clean_last = get_average_of_min_20_percent(final_clean_accuracies_by_class_last)))
+    logging.info("Worst 20 percent clean accuracy for last model = {worst_clean_last}".format(worst_clean_last = get_average_of_min_20_percent(final_clean_accuracies_by_class_last)))
     logging.info("Average robust accuracy for last model = {avg_robust_last}".format(avg_robust_last = sum(final_robust_accuracies_by_class_last)/len(final_robust_accuracies_by_class_last)))
-    logging.info("Worst robust accuracy for last model = {worst_robust_last}".format(worst_robust_last = get_average_of_min_20_percent(final_robust_accuracies_by_class_last)))
+    logging.info("Worst 20 percent robust accuracy for last model = {worst_robust_last}".format(worst_robust_last = get_average_of_min_20_percent(final_robust_accuracies_by_class_last)))
 
 final_df = pd.DataFrame([final_clean_accuracies_by_class_last, final_robust_accuracies_by_class_last, final_clean_accuracies_by_class_best, final_robust_accuracies_by_class_best])
 final_hf = datasets.Dataset.from_pandas(final_df)
