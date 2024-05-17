@@ -94,10 +94,10 @@ def fgsm_loss(model, x, y, eps, normalize):
     return loss, robust_output.clone().detach()
 
 def cw_fgsm_loss(model, x, y, eps, normalize):
-    base = torch.ones_like(x).to(x.device)
+    base = torch.ones_like(x).to(device)
     for sample in range(len(x)):
         base[sample] *= eps[y[sample]]
-    eps = base.clone().to(x.device)
+    eps = base.clone().to(device)
     x = x.clone().detach().to(device)
     x.requires_grad = True
     output = model(normalize(x))
@@ -132,10 +132,10 @@ def TRADES_loss(model, original_imgs, labels, normalize, epsilon = 8/255, beta =
         grad = torch.autograd.grad(loss_kl, [adv_imgs])[0]
         adv_imgs = adv_imgs.detach() + step_size * torch.sign(grad.detach())
         if ccm == "True":
-            base = torch.ones_like(original_imgs).to(original_imgs.device)
+            base = torch.ones_like(original_imgs).to(device)
             for sample in range(len(original_imgs)):
                 base[sample] *= eps_by_class[labels[sample]]
-            batch_eps = base.clone().to(original_imgs.device)
+            batch_eps = base.clone().to(device)
             adv_imgs =  torch.clamp(adv_imgs, min = original_imgs - batch_eps, max = original_imgs + batch_eps)
         else:
             adv_imgs =  torch.clamp(adv_imgs, min = original_imgs - epsilon, max = original_imgs + epsilon)
@@ -155,7 +155,7 @@ def TRADES_loss(model, original_imgs, labels, normalize, epsilon = 8/255, beta =
     loss_robust = cw_criterion(F.log_softmax(adv_preds, dim=1), F.softmax(original_preds, dim=1)) / batch_size
     
     
-    batch_beta = torch.tensor([beta_by_class[int(label)] for label in labels])
+    batch_beta = torch.tensor([beta_by_class[int(label)] for label in labels]).to(device)
     assert len(batch_beta) == len(loss_robust)   
                                         
     #print(batch_beta.shape, loss_natural.shape, loss_robust.shape)
