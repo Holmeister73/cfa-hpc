@@ -88,7 +88,7 @@ class ResNet(nn.Module):
             num_classes = 10
             self.avgpool = nn.AvgPool2d(4)
             
-        if(dataset_name == "tiny-imagenet"):
+        if(dataset_name == "tiny_imagenet"):
             num_classes = 200  
             self.avgpool = nn.AvgPool2d(7)
             
