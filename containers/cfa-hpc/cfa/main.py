@@ -46,9 +46,9 @@ parser.add_argument("--training_type", help="""Type of adversarial training. It 
 parser.add_argument("--attack_type", help = """Type of attack that will be used for vanilla adversarial training,
                     it can be pgd or fgsm""", type = str, default = "pgd")
                     
-parser.add_argument("--epsilon", help="""Attack strength for pgd""", type = float, default = 8/255)
+parser.add_argument("--epsilon", help="""Attack strength for pgd. It will be divided by 255 in the code.""", type = int, default = 8)
 
-parser.add_argument("--step_size", help="""Step size for pgd attack""", type = int, default = 2/255)
+parser.add_argument("--step_size", help="""Step size for pgd attack. It will be divided by 255 in the code.""", type = int, default = 2)
 
 parser.add_argument("--attack_steps", help = "Amount of steps for pgd attack and TRADES loss", type = int, default = 10)
 
@@ -84,8 +84,8 @@ momentum = args.momentum
 weight_decay = args.weight_decay
 training_type = args.training_type
 attack_type = args.attack_type
-epsilon = args.epsilon
-step_size = args.step_size
+epsilon = args.epsilon/255
+step_size = args.step_size/255
 num_steps = args.attack_steps
 beta = args.beta
 ccm = args.ccm
