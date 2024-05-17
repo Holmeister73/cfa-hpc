@@ -260,6 +260,10 @@ for epoch in range(epoch_number):
             weight_average(ema_model, model, decay_rate, init = True)
             ema_test_clean_accuracies_by_class, ema_test_pgd_accuracies_by_class, ema_test_fgsm_accuracies_by_class = calculate_test_accs(ema_model, 
                                                            test_loader, normalize, num_classes = num_classes)
+            if attack_type == "fgsm":
+                test_robust_accuracies_by_class = ema_test_fgsm_accuracies_by_class
+            else:
+                test_robust_accuracies_by_class = ema_test_pgd_accuracies_by_class
         elif epoch > 49:
             if dataset_name == "cifar10":
                 if min(valid_adv_accuracies_by_class) >= threshold:
@@ -270,19 +274,26 @@ for epoch in range(epoch_number):
             ema_test_clean_accuracies_by_class, ema_test_pgd_accuracies_by_class, ema_test_fgsm_accuracies_by_class = calculate_test_accs(ema_model, 
                                                            test_loader, normalize, num_classes = num_classes)
             if attack_type == "fgsm":
-                ema_test_robust_accuracies_by_class = ema_test_fgsm_accuracies_by_class
+                test_robust_accuracies_by_class = ema_test_fgsm_accuracies_by_class
             else:
-                ema_test_robust_accuracies_by_class = ema_test_pgd_accuracies_by_class
-            if sum(ema_test_robust_accuracies_by_class)/len(ema_test_robust_accuracies_by_class) + min(ema_test_robust_accuracies_by_class) > best_model_threshold:
+                test_robust_accuracies_by_class = ema_test_pgd_accuracies_by_class
+            if sum(test_robust_accuracies_by_class)/len(test_robust_accuracies_by_class) + min(test_robust_accuracies_by_class) > best_model_threshold:
                 weight_average(best_model, ema_model, decay_rate, init = True)
-                best_model_threshold = sum(ema_test_robust_accuracies_by_class)/len(ema_test_robust_accuracies_by_class) + min(ema_test_robust_accuracies_by_class)
-        
+                best_model_threshold = sum(test_robust_accuracies_by_class)/len(test_robust_accuracies_by_class) + min(test_robust_accuracies_by_class)
+        else:
+            if attack_type == "fgsm":
+                test_robust_accuracies_by_class = test_fgsm_accuracies_by_class
+            else:
+                test_robust_accuracies_by_class = test_pgd_accuracies_by_class
     elif weight_average_type == "fawa":
         if epoch == 49:
             weight_average(fawa_model, model, decay_rate, init = True)
             fawa_test_clean_accuracies_by_class, fawa_test_pgd_accuracies_by_class, fawa_test_fgsm_accuracies_by_class = calculate_test_accs(fawa_model, 
                                                            test_loader, normalize, num_classes = num_classes)
-        
+            if attack_type == "fgsm":
+                test_robust_accuracies_by_class = fawa_test_fgsm_accuracies_by_class
+            else:
+                test_robust_accuracies_by_class = fawa_test_pgd_accuracies_by_class
         elif epoch > 49:
             if dataset_name == "cifar10":
                 if min(valid_adv_accuracies_by_class) >= threshold:
@@ -295,12 +306,17 @@ for epoch in range(epoch_number):
                                                            test_loader, normalize,  num_classes = num_classes)
         
             if attack_type == "fgsm":
-                fawa_test_robust_accuracies_by_class = fawa_test_fgsm_accuracies_by_class
+                test_robust_accuracies_by_class = fawa_test_fgsm_accuracies_by_class
             else:
-                fawa_test_robust_accuracies_by_class = fawa_test_pgd_accuracies_by_class
-            if sum(fawa_test_robust_accuracies_by_class)/len(fawa_test_robust_accuracies_by_class) + min(fawa_test_robust_accuracies_by_class) > best_model_threshold:
+                test_robust_accuracies_by_class = fawa_test_pgd_accuracies_by_class
+            if sum(test_robust_accuracies_by_class)/len(test_robust_accuracies_by_class) + min(test_robust_accuracies_by_class) > best_model_threshold:
                 weight_average(best_model, fawa_model, decay_rate, init = True)
-                best_model_threshold = sum(fawa_test_robust_accuracies_by_class)/len(fawa_test_robust_accuracies_by_class) + min(fawa_test_robust_accuracies_by_class)
+                best_model_threshold = sum(test_robust_accuracies_by_class)/len(test_robust_accuracies_by_class) + min(test_robust_accuracies_by_class)
+        else:
+            if attack_type == "fgsm":
+                test_robust_accuracies_by_class = test_fgsm_accuracies_by_class
+            else:
+                test_robust_accuracies_by_class = test_pgd_accuracies_by_class
     else:
         if attack_type == "fgsm":
             test_robust_accuracies_by_class = test_fgsm_accuracies_by_class
