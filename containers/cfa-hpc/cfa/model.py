@@ -82,15 +82,13 @@ class ResNet(nn.Module):
         self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2)
         self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2)
         self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
-        
+        self.avgpool = nn.AvgPool2d(4)
         
         if(dataset_name == "cifar10"):
             num_classes = 10
-            self.avgpool = nn.AvgPool2d(4)
-            
+
         if(dataset_name == "tiny_imagenet"):
             num_classes = 200  
-            self.avgpool = nn.AvgPool2d(7)
             
         self.fc = nn.Linear(512*block.expansion, num_classes)
         
