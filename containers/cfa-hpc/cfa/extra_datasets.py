@@ -24,7 +24,7 @@ class TinyImageNet(Dataset):
         self.data = dataset
         
     def __getitem__(self, index):
-        
+        index = int(index)
         img = self.data[index]["image"]
         
         label = self.targets[index]
