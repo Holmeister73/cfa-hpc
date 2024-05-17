@@ -321,7 +321,7 @@ def get_loaders(dataset_name = "cifar10", valid_size = 0.02):
         valid_sampler = SubsetRandomSampler(valid_indices)
         train_loader = DataLoader(cifar10_train, batch_size = 128, sampler = train_sampler)
         valid_loader = DataLoader(cifar10_valid, batch_size = 128, sampler = valid_sampler)
-        test_loader = DataLoader(cifar10_test, batch_size = 128, shuffle = False)
+        test_loader = DataLoader(cifar10_test, batch_size = 2000, shuffle = False)
     elif dataset_name == "tiny_imagenet":
         num_train = len(tiny_imagenet_train)
         indices = list(rng.permutation(num_train))
@@ -339,7 +339,7 @@ def get_loaders(dataset_name = "cifar10", valid_size = 0.02):
         valid_sampler = SubsetRandomSampler(valid_indices)
         train_loader = DataLoader(tiny_imagenet_train, batch_size = 128, sampler = train_sampler)
         valid_loader = DataLoader(tiny_imagenet_valid, batch_size = 128, shuffle = valid_sampler)
-        test_loader = DataLoader(tiny_imagenet_test, batch_size = 128, shuffle = False)
+        test_loader = DataLoader(tiny_imagenet_test, batch_size = 2000, shuffle = False)
     
     return train_loader, valid_loader, test_loader
 
