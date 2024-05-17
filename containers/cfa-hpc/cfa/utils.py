@@ -285,10 +285,10 @@ def get_loaders(dataset_name = "cifar10", valid_size = 0.02):
 
     cifar10_transform_valid = transforms.Compose([transforms.ToTensor()])
 
-    tiny_imagenet_transform_train = transforms.Compose([transforms.RandomCrop(56), transforms.RandomHorizontalFlip(),
+    tiny_imagenet_transform_train = transforms.Compose([transforms.RandomCrop(32), transforms.RandomHorizontalFlip(),
                                                         transforms.ToTensor()])
 
-    tiny_imagenet_transform_valid = transforms.Compose([transforms.CenterCrop(56), transforms.ToTensor()])
+    tiny_imagenet_transform_valid = transforms.Compose([transforms.CenterCrop(32), transforms.ToTensor()])
 
 
     cifar10_train = datasets.CIFAR10(root="./data", train = True, download = True, transform=cifar10_transform_train)
