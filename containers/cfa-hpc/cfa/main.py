@@ -379,6 +379,7 @@ elif dataset_name == "tiny_imagenet":
     logging.info("Average robust accuracy for last model = {avg_robust_last}".format(avg_robust_last = sum(final_robust_accuracies_by_class_last)/len(final_robust_accuracies_by_class_last)))
     logging.info("Worst robust accuracy for last model = {worst_robust_last}".format(worst_robust_last = get_average_of_min_20_percent(final_robust_accuracies_by_class_last)))
 
+final_df = pd.DataFrame([final_clean_accuracies_by_class_last, final_robust_accuracies_by_class_last, final_clean_accuracies_by_class_best, final_robust_accuracies_by_class_best])
 final_hf = datasets.Dataset.from_pandas(final_df)
 
 final_hf.push_to_hub("Holmeister/{training_type}_{attack_type}_{weight_average_type}_results".format(training_type = training_type,
