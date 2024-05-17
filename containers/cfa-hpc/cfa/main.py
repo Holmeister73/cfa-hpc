@@ -385,8 +385,8 @@ elif dataset_name == "tiny_imagenet":
 final_df = pd.DataFrame([final_clean_accuracies_by_class_last, final_robust_accuracies_by_class_last, final_clean_accuracies_by_class_best, final_robust_accuracies_by_class_best])
 final_hf = datasets.Dataset.from_pandas(final_df)
 
-final_hf.push_to_hub("Holmeister/{training_type}_{attack_type}_{weight_average_type}_results".format(training_type = training_type,
-                        attack_type = attack_type, weight_average_type = weight_average_type), token = hf_token)
+final_hf.push_to_hub("Holmeister/{training_type}_{attack_type}_{weight_average_type}_ccm_{ccm}_ccr_{ccr}_results".format(training_type = training_type,
+                        attack_type = attack_type, weight_average_type = weight_average_type, ccm = ccm, ccr = ccr), token = hf_token)
 
 if detailed_statistics == "True":
     pgd_df = pd.DataFrame(classwise_test_pgd_accuracies_for_all_epochs)
@@ -394,8 +394,8 @@ if detailed_statistics == "True":
     clean_df = pd.DataFrame(classwise_test_clean_accuracies_for_all_epochs)
     detailed_df = pd.concat([pgd_df, fgsm_df, clean_df], ignore_index = True)
     detailed_hf = datasets.Dataset.from_pandas(detailed_df)
-    detailed_hf.push_to_hub("Holmeister/{training_type}_{attack_type}_{weight_average_type}_detailed_results".format(training_type = training_type,
-                            attack_type = attack_type, weight_average_type = weight_average_type), token = hf_token)
+    detailed_hf.push_to_hub("Holmeister/{training_type}_{attack_type}_{weight_average_type}_ccm_{ccm}_ccr_{ccr}_detailed_results".format(training_type = training_type,
+                            attack_type = attack_type, weight_average_type = weight_average_type, ccm = ccm, ccr = ccr), token = hf_token)
 
 
 logging.info("Push to hub is done")
