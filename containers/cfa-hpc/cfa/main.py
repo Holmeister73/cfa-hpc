@@ -350,7 +350,7 @@ for epoch in range(epoch_number):
         classwise_test_clean_accuracies_for_all_epochs.append(test_clean_accuracies_by_class)
     
 logging.info("Training is Done")
-logging.info("Best model is from epoch {best_model_epoch}".format(best_model_epoch = best_model_epoch))
+logging.info("Best model is from epoch {best_model_epoch}".format(best_model_epoch = best_model_epoch+1))
 if weight_average_type == "ema":
     final_clean_accuracies_by_class_last, final_robust_accuracies_by_class_last = final_evaluation(ema_model, test_loader, mean, std, normalize, dataset_name = dataset_name)
 elif weight_average_type == "fawa":
