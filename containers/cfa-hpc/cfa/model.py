@@ -123,7 +123,7 @@ def PreActResNet18(dataset_name):
     return ResNet(PreActBlock, [2,2,2,2], dataset_name = dataset_name, preact = True)
 
 def ResNet18(dataset_name):
-    return ResNet(BasicBlock, [2, 2, 2, 2], dataset_name = dataset_name, preact = False)
+    return ResNet(BasicBlock, [2,2,2,2], dataset_name = dataset_name, preact = False)
 
 
 
