@@ -300,6 +300,10 @@ for epoch in range(epoch_number):
     scheduler.step()
     logging.info("Training loss is {loss} at the end of epoch  {epoch}".format(loss = AverageLoss/total_samples, epoch = epoch + 1))
     logging.info("Average test robustness accuracy = {robust_acc}".format(robust_acc = sum(test_robust_accuracies_by_class)/len(test_robust_accuracies_by_class)))
+    if dataset_name == "cifar10":
+      logging.info("Worst class validation accuracy = {valid_acc}".format(valid_acc = min(valid_adv_accuracies_by_class)))
+    elif dataset_name == "tiny_imagenet":
+      logging.info("Worst 20 percent classes validation accuracy = {valid_acc}".format(valid_acc = get_average_of_min_20_percent(valid_adv_accuracies_by_class)))
     if weight_average_type == "ema":
         if epoch >= weight_average_begin:
             classwise_test_pgd_accuracies_for_all_epochs.append(ema_test_pgd_accuracies_by_class)
