@@ -133,23 +133,18 @@ else:
         fawa_model = ResNet18(dataset_name = dataset_name).to(device)
         fawa_model.eval()
 
-#eval_pgd_attack = torchattacks.PGD(model, eps = epsilon, alpha = step_size, steps = num_steps, random_start = False)
-#eval_fgsm_attack = torchattacks.FGSM(model, eps = epsilon)
-
 if(dataset_name == "cifar10"):
     normalize = cifar10_normalize
     num_classes = 10
     mean = [0.4914, 0.4822, 0.4465]
     std = [0.2470, 0.2435, 0.2616] 
-    #eval_pgd_attack.set_normalization_used(mean = mean , std = std)  
-    #eval_fgsm_attack.set_normalization_used(mean = mean , std = std) 
+    weight_average_begin = 49
 if(dataset_name == "tiny_imagenet"):
     normalize = tiny_imagenet_normalize
     num_classes = 200
     mean = [0.485, 0.456, 0.406]
     std = [0.229, 0.224, 0.225]
-    #eval_pgd_attack.set_normalization_used(mean = mean , std = std)  
-    #eval_fgsm_attack.set_normalization_used(mean = mean , std = std)
+    weight_average_begin = 24
 
     
 optimizer = torch.optim.SGD(model.parameters(), lr = lr, momentum = momentum, weight_decay = weight_decay)
@@ -173,35 +168,22 @@ for epoch in range(epoch_number):
     for i,(images,labels) in enumerate(train_loader):
         images = images.to(device)
         labels = labels.to(device)
-        #batch_eps = torch.Tensor([eps_by_class[int(label)] for label in list(labels)])
         
         if training_type == "vanilla":
             if attack_type == "pgd":
                 if ccm == "True":
-                    #pgd_attack = torchattacks.PGD(model, eps = batch_eps, alpha = step_size, steps = num_steps)
                     loss, robust_output = cw_pgd_loss(model, images, labels, eps_by_class, step_size, num_steps, normalize)
                 else:
-                    #pgd_attack = torchattacks.PGD(model, eps = epsilon, alpha = step_size, steps = num_steps)
                     loss, robust_output = pgd_loss(model, images, labels, epsilon, step_size, num_steps, normalize)
                     
-                #pgd_attack.set_normalization_used(mean = mean , std = std)
-                
-                #adv_images = pgd_attack(images, labels)
+               
                 
             elif attack_type == "fgsm":
                 if ccm == "True":
-                    #fgsm_attack = torchattacks.FGSM(model, eps = batch_eps)
                     loss, robust_output = cw_fgsm_loss(model, images, labels, eps_by_class, normalize)
                 else:
-                    #fgsm_attack = torchattacks.FGSM(model, eps = epsilon)
                     loss, robust_output = fgsm_loss(model, images, labels, epsilon, normalize)
-                #fgsm_attack.set_normalization_used(mean = mean , std = std)
-                #adv_images = fgsm_attack(images, labels)
-                
-            #predictions = model(normalize(adv_images))
-            #loss=loss_func(predictions,labels)
-            
-            #_,predicted=torch.max(predictions,1)
+               
             _,predicted = torch.max(robust_output,1)
             for prediction, label in zip(list(predicted), list(labels)):
                 if prediction == label: 
@@ -228,16 +210,7 @@ for epoch in range(epoch_number):
         AverageLoss+=loss.item()*images.size(0)
         total_samples += images.size(0)
     
-    #if training_type == "vanilla":
-    #    if attack_type == "pgd":    
-            #eval_attack = eval_pgd_attack
-    #        eval_attack = "pgd"
-    #    elif attack_type == "fgsm":
-            #eval_attack = eval_fgsm_attack
-    #        eval_attack = fgsm_loss
-    #elif training_type == "TRADES":
-        #eval_attack = eval_pgd_attack
-    #    eval_attack = pgd_loss
+   
     eval_attack = "pgd"
     if attack_type == "fgsm":
       eval_attack = "fgsm"
@@ -256,7 +229,7 @@ for epoch in range(epoch_number):
         beta_by_class = [beta*(lambda_2 + train_robust_acc)/(beta*(lambda_2 + train_robust_acc)+1) for  train_robust_acc in train_robust_accuracies_by_class]
     
     if weight_average_type == "ema":
-        if epoch == 49:
+        if epoch == weight_average_begin:
             weight_average(ema_model, model, decay_rate, init = True)
             ema_test_clean_accuracies_by_class, ema_test_pgd_accuracies_by_class, ema_test_fgsm_accuracies_by_class = calculate_test_accs(ema_model, 
                                                            test_loader, normalize, num_classes = num_classes)
@@ -264,7 +237,7 @@ for epoch in range(epoch_number):
                 test_robust_accuracies_by_class = ema_test_fgsm_accuracies_by_class
             else:
                 test_robust_accuracies_by_class = ema_test_pgd_accuracies_by_class
-        elif epoch > 49:
+        elif epoch > weight_average_begin:
             if dataset_name == "cifar10":
                 if min(valid_adv_accuracies_by_class) >= threshold:
                     weight_average(ema_model, model, decay_rate, init = False)
@@ -287,7 +260,7 @@ for epoch in range(epoch_number):
             else:
                 test_robust_accuracies_by_class = test_pgd_accuracies_by_class
     elif weight_average_type == "fawa":
-        if epoch == 49:
+        if epoch == weight_average_begin:
             weight_average(fawa_model, model, decay_rate, init = True)
             fawa_test_clean_accuracies_by_class, fawa_test_pgd_accuracies_by_class, fawa_test_fgsm_accuracies_by_class = calculate_test_accs(fawa_model, 
                                                            test_loader, normalize, num_classes = num_classes)
@@ -295,7 +268,7 @@ for epoch in range(epoch_number):
                 test_robust_accuracies_by_class = fawa_test_fgsm_accuracies_by_class
             else:
                 test_robust_accuracies_by_class = fawa_test_pgd_accuracies_by_class
-        elif epoch > 49:
+        elif epoch > weight_average_begin:
             if dataset_name == "cifar10":
                 if min(valid_adv_accuracies_by_class) >= threshold:
                     weight_average(fawa_model, model, decay_rate, init = False)
@@ -333,13 +306,13 @@ for epoch in range(epoch_number):
     logging.info("Training loss is {loss} at the end of epoch  {epoch}".format(loss = AverageLoss/total_samples, epoch = epoch + 1))
     logging.info("Average test robustness accuracy = {robust_acc}".format(robust_acc = sum(test_robust_accuracies_by_class)/len(test_robust_accuracies_by_class)))
     if weight_average_type == "ema":
-        if epoch >= 49:
+        if epoch >= weight_average_begin:
             classwise_test_pgd_accuracies_for_all_epochs.append(ema_test_pgd_accuracies_by_class)
             classwise_test_fgsm_accuracies_for_all_epochs.append(ema_test_fgsm_accuracies_by_class)
             classwise_test_clean_accuracies_for_all_epochs.append(ema_test_clean_accuracies_by_class)
     
     elif weight_average_type == "fawa":
-        if epoch >= 49:
+        if epoch >= weight_average_begin:
             classwise_test_pgd_accuracies_for_all_epochs.append(fawa_test_pgd_accuracies_by_class)
             classwise_test_fgsm_accuracies_for_all_epochs.append(fawa_test_fgsm_accuracies_by_class)
             classwise_test_clean_accuracies_for_all_epochs.append(fawa_test_clean_accuracies_by_class)
