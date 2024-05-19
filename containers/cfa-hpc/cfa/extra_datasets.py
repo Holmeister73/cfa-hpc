@@ -20,17 +20,20 @@ class TinyImageNet(Dataset):
             dataset = load_dataset('Maysee/tiny-imagenet', split='valid')
             
         self.targets = list(dataset["label"])
-        self.data = dataset.with_format("torch")
-        #self.data = dataset
+        #self.data = dataset.with_format("torch")
+        self.data = dataset
         
     def __getitem__(self, index):
         index = int(index)
         img = self.data[index]["image"]
-        if img.shape[0] == 1:
-            img = img.repeat(3,1,1)
         
         if self.transform is not None:
             img = self.transform(img)
+        
+        if img.shape[0] == 1:
+            img = img.repeat(3,1,1)
+        
+        
             
         label = self.targets[index]
         return img, label
