@@ -238,12 +238,7 @@ for epoch in range(epoch_number):
             else:
                 test_robust_accuracies_by_class = ema_test_pgd_accuracies_by_class
         elif epoch > weight_average_begin:
-            if dataset_name == "cifar10":
-                if min(valid_adv_accuracies_by_class) >= threshold:
-                    weight_average(ema_model, model, decay_rate, init = False)
-            elif dataset_name == "tiny_imagenet":
-                if get_average_of_min_20_percent(valid_adv_accuracies_by_class) >= threshold:
-                    weight_average(ema_model, model, decay_rate, init = False)
+            weight_average(ema_model, model, decay_rate, init = False)
             ema_test_clean_accuracies_by_class, ema_test_pgd_accuracies_by_class, ema_test_fgsm_accuracies_by_class = calculate_test_accs(ema_model, 
                                                            test_loader, normalize, num_classes = num_classes)
             if attack_type == "fgsm":
