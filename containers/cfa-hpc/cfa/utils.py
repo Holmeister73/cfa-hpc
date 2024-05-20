@@ -186,7 +186,7 @@ def weight_average(model, new_model, decay_rate, init=False):
     
     return 
 
-def validation(model, valid_loader, normalize, attack = "pgd", num_classes = 10):
+def validation(model, valid_loader, normalize, epsilon, step_size, num_steps, attack = "pgd", num_classes = 10):
 
     model.eval()
     ValidLoss = 0
@@ -206,9 +206,9 @@ def validation(model, valid_loader, normalize, attack = "pgd", num_classes = 10)
         loss=loss_func(clean_predictions,labels)
         ValidLoss += loss.item()*labels.size(0)
         if attack == "pgd":
-            _, robust_output = pgd_loss(model, images, labels, 8/255, 2/255, 4, normalize)
+            _, robust_output = pgd_loss(model, images, labels, epsilon, step_size, num_steps, normalize)
         else:
-            _, robust_output = fgsm_loss(model, images, labels, 8/255, normalize)
+            _, robust_output = fgsm_loss(model, images, labels, epsilon, normalize)
         #adv_predictions = model(normalize(adv_images))
        
         #_,adv_predicted=torch.max(adv_predictions,1)
@@ -231,7 +231,7 @@ def validation(model, valid_loader, normalize, attack = "pgd", num_classes = 10)
         
     return clean_accuracies_by_class, adv_accuracies_by_class, ValidLoss    
 
-def calculate_test_accs(model, test_loader, normalize, num_classes = 10):
+def calculate_test_accs(model, test_loader, normalize, epsilon, step_size, num_steps, num_classes = 10):
     
     
     model.eval()
@@ -250,11 +250,11 @@ def calculate_test_accs(model, test_loader, normalize, num_classes = 10):
         _,clean_predicted=torch.max(clean_predictions,1)
     
         #pgd_predictions = model(normalize(pgd_adv_images))
-        _,pgd_predictions = pgd_loss(model, images, labels, 8/255, 2/255, 4, normalize)
+        _,pgd_predictions = pgd_loss(model, images, labels, epsilon, step_size, num_steps, normalize)
         _,pgd_predicted=torch.max(pgd_predictions,1)
         
         #fgsm_predictions = model(normalize(fgsm_adv_images))
-        _,fgsm_predictions = fgsm_loss(model, images, labels, 8/255, normalize)
+        _,fgsm_predictions = fgsm_loss(model, images, labels, epsilon, normalize)
         _,fgsm_predicted=torch.max(fgsm_predictions,1)
         
         for prediction, label in zip(list(clean_predicted), list(labels)):
