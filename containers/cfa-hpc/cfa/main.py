@@ -215,10 +215,10 @@ for epoch in range(epoch_number):
     if attack_type == "fgsm":
       eval_attack = "fgsm"
     
-    valid_clean_accuracies_by_class, valid_adv_accuracies_by_class, validloss = validation(model, valid_loader, normalize, attack = eval_attack, 
+    valid_clean_accuracies_by_class, valid_adv_accuracies_by_class, validloss = validation(model, valid_loader, normalize, epsilon, step_size, num_steps, attack = eval_attack, 
                                                                                            num_classes = num_classes)
    
-    test_clean_accuracies_by_class, test_pgd_accuracies_by_class, test_fgsm_accuracies_by_class = calculate_test_accs(model, test_loader, normalize, num_classes = num_classes)
+    test_clean_accuracies_by_class, test_pgd_accuracies_by_class, test_fgsm_accuracies_by_class = calculate_test_accs(model, test_loader, normalize, epsilon, step_size, num_steps, num_classes = num_classes)
     
     train_robust_accuracies_by_class = [correct/sample for correct, sample in zip(train_robust_corrects_by_class, samples_by_class)]
     
@@ -232,7 +232,7 @@ for epoch in range(epoch_number):
         if epoch == weight_average_begin:
             weight_average(ema_model, model, decay_rate, init = True)
             ema_test_clean_accuracies_by_class, ema_test_pgd_accuracies_by_class, ema_test_fgsm_accuracies_by_class = calculate_test_accs(ema_model, 
-                                                           test_loader, normalize, num_classes = num_classes)
+                                                           test_loader, normalize, epsilon, step_size, num_steps, num_classes = num_classes)
             if attack_type == "fgsm":
                 test_robust_accuracies_by_class = ema_test_fgsm_accuracies_by_class
             else:
@@ -240,7 +240,7 @@ for epoch in range(epoch_number):
         elif epoch > weight_average_begin:
             weight_average(ema_model, model, decay_rate, init = False)
             ema_test_clean_accuracies_by_class, ema_test_pgd_accuracies_by_class, ema_test_fgsm_accuracies_by_class = calculate_test_accs(ema_model, 
-                                                           test_loader, normalize, num_classes = num_classes)
+                                                           test_loader, normalize, epsilon, step_size, num_steps, num_classes = num_classes)
             if attack_type == "fgsm":
                 test_robust_accuracies_by_class = ema_test_fgsm_accuracies_by_class
             else:
@@ -258,7 +258,7 @@ for epoch in range(epoch_number):
         if epoch == weight_average_begin:
             weight_average(fawa_model, model, decay_rate, init = True)
             fawa_test_clean_accuracies_by_class, fawa_test_pgd_accuracies_by_class, fawa_test_fgsm_accuracies_by_class = calculate_test_accs(fawa_model, 
-                                                           test_loader, normalize, num_classes = num_classes)
+                                                           test_loader, normalize, epsilon, step_size, num_steps, num_classes = num_classes)
             if attack_type == "fgsm":
                 test_robust_accuracies_by_class = fawa_test_fgsm_accuracies_by_class
             else:
@@ -272,7 +272,7 @@ for epoch in range(epoch_number):
                     weight_average(fawa_model, model, decay_rate, init = False)
             
             fawa_test_clean_accuracies_by_class, fawa_test_pgd_accuracies_by_class, fawa_test_fgsm_accuracies_by_class = calculate_test_accs(fawa_model, 
-                                                           test_loader, normalize,  num_classes = num_classes)
+                                                           test_loader, normalize, epsilon, step_size, num_steps,  num_classes = num_classes)
         
             if attack_type == "fgsm":
                 test_robust_accuracies_by_class = fawa_test_fgsm_accuracies_by_class
