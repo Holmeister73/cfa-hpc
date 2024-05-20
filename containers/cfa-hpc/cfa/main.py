@@ -299,6 +299,7 @@ for epoch in range(epoch_number):
             best_model_epoch = epoch
     scheduler.step()
     logging.info("Training loss is {loss} at the end of epoch  {epoch}".format(loss = AverageLoss/total_samples, epoch = epoch + 1))
+    logging.info("Average train robust accuracy is {train_robust_acc}".format(train_robust_acc = sum(train_robust_accuracies_by_class)/len(train_robust_accuracies_by_class)))
     logging.info("Average test robustness accuracy = {robust_acc}".format(robust_acc = sum(test_robust_accuracies_by_class)/len(test_robust_accuracies_by_class)))
     if dataset_name == "cifar10":
       logging.info("Worst class validation accuracy = {valid_acc}".format(valid_acc = min(valid_adv_accuracies_by_class)))
